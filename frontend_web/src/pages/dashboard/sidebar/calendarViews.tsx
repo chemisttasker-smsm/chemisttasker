@@ -1,10 +1,12 @@
 import { Box, Typography } from '@mui/material';
 import moment from 'moment';
 import { navigate as navigateConstants } from 'react-big-calendar/lib/utils/constants';
-import TimeGrid from 'react-big-calendar/lib/TimeGrid';
+import TimeGridImport from 'react-big-calendar/lib/TimeGrid';
 import type { CSSProperties, MouseEvent } from 'react';
 
 type CalendarViewKey = 'month' | 'week' | 'fortnight' | 'day';
+
+const TimeGrid = (TimeGridImport as any)?.default ?? TimeGridImport;
 
 // Ensure all moment-based calculations start the week on Monday.
 moment.updateLocale('en', {

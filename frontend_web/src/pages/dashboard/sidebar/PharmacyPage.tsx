@@ -80,6 +80,9 @@ const LIGHT_BORDER = "#D9E2F2";
 const HERO_GRADIENT_START = "#143EEA";
 // const HERO_GRADIENT_END = "#D20DAE";
 const HERO_GRADIENT = "linear-gradient(135deg, #143EEA 0%, #2429B8 45%, #8B1CF6 72%, #D20DAE 100%)";
+const DASHBOARD_FONT_FAMILY = '"DM Sans Variable", "DM Sans", "Barlow", Arial, sans-serif';
+const DASHBOARD_INK = "#06123A";
+const DASHBOARD_MUTED = "#5E6B8D";
 
 type PharmacyApi = {
   id: string | number;
@@ -255,6 +258,7 @@ const pharmacyPageFrameSx = {
   maxWidth: "none",
   mx: "auto",
   px: { xs: 0, sm: 1.5, md: 2, xl: 3 },
+  fontFamily: DASHBOARD_FONT_FAMILY,
 } as const;
 const pharmacyFormLightSx = {
   color: "#111827",
@@ -1854,7 +1858,7 @@ export default function PharmacyPage({
   }
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, width: "100%" }}>
+    <Box sx={{ flex: 1, minHeight: 0, width: "100%", color: DASHBOARD_INK, fontFamily: DASHBOARD_FONT_FAMILY }}>
       <GlobalStyles styles={{ ".pac-container": { zIndex: 1400 } }} />
       {!standalone && (
         <TopBar
@@ -1880,16 +1884,23 @@ export default function PharmacyPage({
             alignItems={{ xs: "flex-start", sm: "center" }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={700}>
+              <Typography sx={{ fontSize: { xs: 28, md: 34 }, lineHeight: 1.08, fontWeight: 950, color: DASHBOARD_INK }}>
                 Claim Pharmacies & Requests
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ mt: 1, color: DASHBOARD_MUTED, fontSize: { xs: 15, md: 16 }, fontWeight: 800, lineHeight: 1.45 }}>
                 Link new pharmacies to your organization and track pending claim activity.
               </Typography>
             </Box>
             <Button
               variant="contained"
-              sx={{ ml: { sm: "auto" } }}
+              sx={{
+                ml: { sm: "auto" },
+                minHeight: 46,
+                px: 2.25,
+                borderRadius: "12px",
+                fontWeight: 900,
+                boxShadow: "0 12px 28px rgba(20, 62, 234, 0.18)",
+              }}
               onClick={() => setClaimAccordionOpen((prev) => !prev)}
             >
               {claimAccordionOpen ? "Hide Claim Form" : "Claim Pharmacy"}
@@ -1899,7 +1910,14 @@ export default function PharmacyPage({
           <Accordion
             expanded={claimAccordionOpen}
             onChange={(_, expanded) => setClaimAccordionOpen(expanded)}
-            sx={{ mt: 2 }}
+            sx={{
+              mt: 2,
+              borderRadius: "20px !important",
+              border: `1px solid ${LIGHT_BORDER}`,
+              boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
+              overflow: "hidden",
+              "&:before": { display: "none" },
+            }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Stack
@@ -1909,12 +1927,12 @@ export default function PharmacyPage({
                 justifyContent="space-between"
                 sx={{ width: "100%" }}
               >
-                <Typography fontWeight={600}>Submit a claim by email</Typography>
+                <Typography sx={{ color: DASHBOARD_INK, fontWeight: 900, fontSize: 18 }}>Submit a claim by email</Typography>
                 <Stack direction="row" spacing={3}>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, fontWeight: 800 }}>
                     Pending: <strong>{claimCounts.pending}</strong>
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, fontWeight: 800 }}>
                     Accepted: <strong>{claimCounts.accepted}</strong>
                   </Typography>
                 </Stack>
@@ -1941,7 +1959,7 @@ export default function PharmacyPage({
                   variant="contained"
                   onClick={handleSubmitClaim}
                   disabled={claimSubmitting}
-                  sx={{ minWidth: 160 }}
+                  sx={{ minWidth: 160, minHeight: 48, borderRadius: "12px", fontWeight: 900, boxShadow: "0 12px 28px rgba(20, 62, 234, 0.18)" }}
                 >
                   {claimSubmitting ? <CircularProgress size={20} color="inherit" /> : "Submit Claim"}
                 </Button>
@@ -2018,16 +2036,24 @@ export default function PharmacyPage({
             alignItems={{ xs: "flex-start", sm: "center" }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={700}>
+              <Typography sx={{ fontSize: { xs: 28, md: 34 }, lineHeight: 1.08, fontWeight: 950, color: DASHBOARD_INK }}>
                 Claim Requests
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography sx={{ mt: 1, color: DASHBOARD_MUTED, fontSize: { xs: 15, md: 16 }, fontWeight: 800, lineHeight: 1.45 }}>
                 Organizations can request access to manage your pharmacies. Review and respond to requests below.
               </Typography>
             </Box>
             <Button
               variant="contained"
-              sx={{ ml: { sm: "auto" }, width: { xs: "100%", sm: "auto" } }}
+              sx={{
+                ml: { sm: "auto" },
+                width: { xs: "100%", sm: "auto" },
+                minHeight: 46,
+                px: 2.25,
+                borderRadius: "12px",
+                fontWeight: 900,
+                boxShadow: "0 12px 28px rgba(20, 62, 234, 0.18)",
+              }}
               onClick={() => setOwnerAccordionOpen((prev) => !prev)}
             >
               {ownerAccordionOpen ? "Hide Requests" : "View Requests"}
@@ -2037,7 +2063,14 @@ export default function PharmacyPage({
           <Accordion
             expanded={ownerAccordionOpen}
             onChange={(_, expanded) => setOwnerAccordionOpen(expanded)}
-            sx={{ mt: 2 }}
+            sx={{
+              mt: 2,
+              borderRadius: "20px !important",
+              border: `1px solid ${LIGHT_BORDER}`,
+              boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
+              overflow: "hidden",
+              "&:before": { display: "none" },
+            }}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Stack
@@ -2047,12 +2080,12 @@ export default function PharmacyPage({
                 justifyContent="space-between"
                 sx={{ width: "100%" }}
               >
-                <Typography fontWeight={600}>Organization claim requests</Typography>
+                <Typography sx={{ color: DASHBOARD_INK, fontWeight: 900, fontSize: 18 }}>Organization claim requests</Typography>
                 <Stack direction="row" spacing={3}>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, fontWeight: 800 }}>
                     Pending: <strong>{ownerClaimCounts.pending}</strong>
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, fontWeight: 800 }}>
                     Accepted: <strong>{ownerClaimCounts.accepted}</strong>
                   </Typography>
                 </Stack>
@@ -2074,13 +2107,29 @@ export default function PharmacyPage({
               ) : (
                 <Stack spacing={2.5}>
                   {ownerClaims.map((claim) => (
-                    <Paper key={claim.id} variant="outlined" sx={{ borderRadius: 3, p: { xs: 2, md: 2.5 } }}>
+                    <Paper
+                      key={claim.id}
+                      variant="outlined"
+                      sx={{
+                        borderRadius: { xs: "16px", md: "20px" },
+                        p: { xs: 2, md: 2.5 },
+                        borderColor: "#E5ECF7",
+                        boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
+                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                        "&:hover": {
+                          transform: { xs: "none", md: "translateY(-3px)" },
+                          boxShadow: "0 18px 42px rgba(6, 18, 58, 0.12)",
+                        },
+                      }}
+                    >
                       <Stack spacing={1.5}>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "flex-start", sm: "center" }} justifyContent="space-between">
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="h6">{claim.pharmacy?.name ?? "Untitled Pharmacy"}</Typography>
+                            <Typography sx={{ color: DASHBOARD_INK, fontWeight: 950, fontSize: { xs: 20, md: 22 }, lineHeight: 1.15 }}>
+                              {claim.pharmacy?.name ?? "Untitled Pharmacy"}
+                            </Typography>
                             {claim.pharmacy?.email && (
-                              <Typography variant="body2" color="text.secondary">
+                              <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, fontWeight: 700 }}>
                                 {claim.pharmacy.email}
                               </Typography>
                             )}
@@ -2093,7 +2142,7 @@ export default function PharmacyPage({
                           />
                         </Stack>
 
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, fontWeight: 700 }}>
                           Requested by <strong>{claim.organization?.name ?? "Unknown organization"}</strong>
                           {" on "}
                           {formatDateTime(claim.created_at)}
@@ -2117,6 +2166,7 @@ export default function PharmacyPage({
                               variant="contained"
                               color="success"
                               disabled={!canRespondToClaims}
+                              sx={{ minHeight: 42, borderRadius: "12px", fontWeight: 900 }}
                               onClick={() => canRespondToClaims && openOwnerClaimDialog(claim, "ACCEPTED")}
                             >
                               Approve
@@ -2125,6 +2175,7 @@ export default function PharmacyPage({
                               variant="outlined"
                               color="error"
                               disabled={!canRespondToClaims}
+                              sx={{ minHeight: 42, borderRadius: "12px", fontWeight: 900 }}
                               onClick={() => canRespondToClaims && openOwnerClaimDialog(claim, "REJECTED")}
                             >
                               Reject
@@ -2160,10 +2211,10 @@ export default function PharmacyPage({
           }}
         >
           <Box>
-            <Typography variant="h5" fontWeight={700}>
+            <Typography sx={{ fontSize: { xs: 28, md: 34 }, lineHeight: 1.08, fontWeight: 950, color: DASHBOARD_INK }}>
               {standalone ? "Set Up Your Pharmacy" : "My Pharmacies"}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography sx={{ mt: 1, color: DASHBOARD_MUTED, fontSize: { xs: 15, md: 16 }, fontWeight: 800, lineHeight: 1.45 }}>
               {standalone
                 ? "Add your first pharmacy now. You can keep building the rest of your workspace after this step."
                 : "Manage your locations, staff and admins"}
@@ -2175,7 +2226,19 @@ export default function PharmacyPage({
                 Save & Continue Later
               </Button>
             )}
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => openDialog()} sx={{ width: { xs: "100%", sm: "auto" } }}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => openDialog()}
+              sx={{
+                width: { xs: "100%", sm: "auto" },
+                minHeight: 48,
+                px: 2.5,
+                borderRadius: "12px",
+                fontWeight: 900,
+                boxShadow: "0 12px 28px rgba(20, 62, 234, 0.18)",
+              }}
+            >
               Add Pharmacy
             </Button>
           </Stack>
@@ -2390,10 +2453,12 @@ export default function PharmacyPage({
               <Box
                 key={index}
                 sx={{
-                  borderRadius: 2,
+                  borderRadius: { xs: "16px", md: "20px" },
                   border: "1px solid",
-                  borderColor: "divider",
-                  p: 2,
+                  borderColor: "#E5ECF7",
+                  p: { xs: 2, md: 2.5 },
+                  bgcolor: "#FFFFFF",
+                  boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
                 }}
               >
                 <Box sx={{ display: "flex", gap: 2 }}>

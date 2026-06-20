@@ -627,7 +627,10 @@ const ActiveShiftsPage: React.FC<ActiveShiftsPageProps> = ({ shiftId = null, tit
     const handleLevelChange = useCallback(
         (shift: Shift, newLevel: EscalationLevelKey) => {
             const currentLevelKey = getCurrentLevelKey(shift);
-            const viewableLevels = deriveLevelSequence(currentLevelKey);
+            const viewableLevels = deriveLevelSequence(
+                currentLevelKey,
+                (shift as any).allowedEscalationLevels,
+            );
             if (!viewableLevels.includes(newLevel as any)) {
                 showSnackbar('Escalate to this level to review members status.');
                 return;
@@ -796,7 +799,10 @@ const ActiveShiftsPage: React.FC<ActiveShiftsPageProps> = ({ shiftId = null, tit
                     const selectedLevel = selectedLevelByShift[shift.id] ?? shiftLevel;
                     const tabKey = getTabKey(shift.id, selectedLevel);
                     const currentTabData = tabData[tabKey] || { loading: false };
-                    const viewableLevelKeys = deriveLevelSequence(shiftLevel);
+                    const viewableLevelKeys = deriveLevelSequence(
+                        shiftLevel,
+                        (shift as any).allowedEscalationLevels,
+                    );
                     const communityLevelKeys = viewableLevelKeys.filter(level => level !== PUBLIC_LEVEL_KEY);
                     const communityTabData = communityLevelKeys.map(level => tabData[getTabKey(shift.id, level)]);
                     const communityDataLoading = communityLevelKeys.some((level, index) => {

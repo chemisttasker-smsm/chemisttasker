@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, Button, Dialog, HelperText, Portal, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PharmacyForm from '@/roles/shared/pharmacies/PharmacyForm';
-import { getOwnerSetupStatus, ownerSetupPaths } from '@/utils/ownerSetup';
+import { getOwnerSetupStatus, markOwnerPharmacySetupSkipped, ownerSetupPaths } from '@/utils/ownerSetup';
 
 export default function OwnerSetupPharmacyScreen() {
   const router = useRouter();
@@ -80,7 +80,10 @@ export default function OwnerSetupPharmacyScreen() {
         mode="create"
         onSuccess={handleCreateSuccess}
         onCancel={() => router.replace(ownerSetupPaths.dashboard as any)}
-        onContinueLater={() => router.replace(ownerSetupPaths.dashboard as any)}
+        onContinueLater={async () => {
+          await markOwnerPharmacySetupSkipped();
+          router.replace(ownerSetupPaths.dashboard as any);
+        }}
         showSetupHero
       />
 

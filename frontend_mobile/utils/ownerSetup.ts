@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchPharmaciesService, getOnboarding } from '@chemisttasker/shared-core';
 
 export type OwnerSetupStatus = {
@@ -11,6 +12,19 @@ export type OwnerSetupStatus = {
 const OWNER_ONBOARDING_PATH = '/setup/owner/onboarding';
 const OWNER_PHARMACIES_PATH = '/setup/owner/pharmacies';
 const OWNER_DASHBOARD_PATH = '/owner/dashboard';
+const OWNER_PHARMACY_SETUP_SKIPPED_KEY = 'owner_pharmacy_setup_skipped';
+
+export async function markOwnerPharmacySetupSkipped() {
+  await AsyncStorage.setItem(OWNER_PHARMACY_SETUP_SKIPPED_KEY, 'true');
+}
+
+export async function clearOwnerPharmacySetupSkipped() {
+  await AsyncStorage.removeItem(OWNER_PHARMACY_SETUP_SKIPPED_KEY);
+}
+
+async function isOwnerPharmacySetupSkipped() {
+  return (await AsyncStorage.getItem(OWNER_PHARMACY_SETUP_SKIPPED_KEY)) === 'true';
+}
 
 export async function getOwnerSetupStatus(): Promise<OwnerSetupStatus> {
   try {
@@ -39,13 +53,18 @@ export async function getOwnerSetupStatus(): Promise<OwnerSetupStatus> {
     const pharmacies: any = await fetchPharmaciesService({});
     const pharmacyList = Array.isArray(pharmacies?.results) ? pharmacies.results : Array.isArray(pharmacies) ? pharmacies : [];
     const pharmaciesCount = pharmacyList.length;
+    const skippedPharmacySetup = pharmaciesCount === 0 ? await isOwnerPharmacySetupSkipped() : false;
+
+    if (pharmaciesCount > 0) {
+      await clearOwnerPharmacySetupSkipped().catch(() => null);
+    }
 
     return {
       onboardingExists: true,
       onboardingComplete: true,
       pharmaciesCount,
       numberOfPharmacies,
-      nextPath: pharmaciesCount > 0 ? null : OWNER_PHARMACIES_PATH,
+      nextPath: pharmaciesCount > 0 || skippedPharmacySetup ? null : OWNER_PHARMACIES_PATH,
     };
   } catch (error: any) {
     if (error?.status === 404 || error?.response?.status === 404) {

@@ -91,7 +91,10 @@ export function useTabData(
     useEffect(() => {
         shifts.forEach(shift => {
             const currentLevel = selectedLevelByShift[shift.id] || (shift as any).visibility || PUBLIC_LEVEL_KEY;
-            const viewableLevels = deriveLevelSequence(getCurrentLevelKey(shift));
+            const viewableLevels = deriveLevelSequence(
+                getCurrentLevelKey(shift),
+                (shift as any).allowedEscalationLevels,
+            );
             const levelsToLoad = new Set<EscalationLevelKey>([
                 ...viewableLevels,
                 currentLevel as EscalationLevelKey,

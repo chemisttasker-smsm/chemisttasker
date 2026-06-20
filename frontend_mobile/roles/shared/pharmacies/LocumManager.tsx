@@ -94,6 +94,8 @@ type LocumManagerProps = {
     onMembershipsChanged: () => void;
     loading?: boolean;
     pharmacyName?: string;
+    onMessageMember?: (memberId: string | number) => void;
+    messagingMemberId?: string | number | null;
 };
 
 export default function LocumManager({
@@ -102,22 +104,32 @@ export default function LocumManager({
     onMembershipsChanged,
     loading = false,
     pharmacyName,
+    onMessageMember,
+    messagingMemberId = null,
 }: LocumManagerProps) {
     const baseInviteUrl = process.env.EXPO_PUBLIC_WEB_URL?.trim() || 'https://www.chemisttasker.com';
     const derivedLocums: Locum[] = useMemo(() => {
-        return (memberships || []).map((m) => {
+        return (memberships || []).map((inputM: any) => {
+            const m = inputM;
+            const userDetails = m.userDetails ?? m.user_details;
+            const invitedName = m.invitedName ?? m.invited_name;
+            const userFirst = userDetails?.firstName ?? userDetails?.first_name;
+            const userLast = userDetails?.lastName ?? userDetails?.last_name;
+            const username = userDetails?.username;
+            const userFull = [userFirst, userLast].filter(Boolean).join(' ');
             const fullName =
-                m.invited_name ||
+                invitedName ||
+                userFull ||
+                username ||
                 m.name ||
-                [m.user_details?.first_name, m.user_details?.last_name].filter(Boolean).join(' ') ||
                 'Locum';
-            const email = m.user_details?.email || m.email;
+            const email = userDetails?.email || m.email;
             return {
                 id: m.id,
                 name: fullName,
                 email,
                 role: coerceRole(m.role),
-                workType: coerceWorkType(m.employment_type),
+                workType: coerceWorkType(m.employmentType ?? m.employment_type),
             };
         });
     }, [memberships]);
@@ -408,9 +420,12 @@ export default function LocumManager({
                                 {item.workType.replace('_', ' ')}
                             </Chip>
                         </View>
-                        <Text style={styles.locumName}>
-                            {[item.name, item.email].filter(Boolean).join(' | ')}
-                        </Text>
+                        <View style={styles.staffInfo}>
+                            <Text style={styles.staffName}>{item.name}</Text>
+                            {!!item.email && (
+                                <Text style={styles.staffDetails}>{item.email}</Text>
+                            )}
+                        </View>
                     </View>
                     <IconButton
                         icon="delete"
@@ -420,10 +435,23 @@ export default function LocumManager({
                         disabled={deleteLoadingId === item.id}
                         style={styles.deleteButton}
                     />
+                    <View style={styles.cardActions}>
+                        {onMessageMember ? (
+                            <Button
+                                mode="text"
+                                onPress={() => onMessageMember(item.id)}
+                                loading={messagingMemberId === item.id}
+                                disabled={messagingMemberId === item.id}
+                                compact
+                            >
+                                Message
+                            </Button>
+                        ) : null}
+                    </View>
                 </Card.Content>
             </Card>
         ),
-        [deleteLoadingId]
+        [deleteLoadingId, messagingMemberId, onMessageMember]
     );
 
     return (
@@ -750,13 +778,42 @@ const styles = StyleSheet.create({
     listContent: { paddingBottom: 16 },
     skeletonContainer: { gap: 12 },
     card: { marginBottom: 12, backgroundColor: surfaceTokens.bg },
-    cardContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-    cardHeader: { flex: 1 },
-    chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 6 },
+    cardContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: 12,
+        paddingHorizontal: 8,
+    },
+    cardHeader: {
+        flex: 1,
+        justifyContent: 'center',
+    },
+    chips: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+        marginBottom: 8,
+    },
     chip: { minHeight: 28, paddingHorizontal: 6, justifyContent: 'center' },
     chipText: { fontSize: 11, lineHeight: 14, fontWeight: '600' },
-    locumName: { flex: 1, fontSize: 14, color: surfaceTokens.text },
-    deleteButton: { margin: 0, marginLeft: 6 },
+    staffInfo: {
+        justifyContent: 'center',
+    },
+    staffName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    staffDetails: {
+        fontSize: 12,
+        color: surfaceTokens.textMuted,
+        marginTop: 2,
+    },
+    deleteButton: { margin: 0, marginLeft: 8 },
+    cardActions: {
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+    },
     emptyText: { textAlign: 'center', padding: 32, color: surfaceTokens.textMuted },
     modal: {
         backgroundColor: surfaceTokens.bg,

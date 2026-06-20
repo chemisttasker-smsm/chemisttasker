@@ -8,11 +8,15 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import SettingsIcon from "@mui/icons-material/Settings";
 import { MembershipDTO, PharmacyAdminDTO, PharmacyDTO, surface } from "./types";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import StaffManager from "./StaffManager";
 import LocumManager from "./LocumManager";
 import PharmacyAdmins from "./PharmacyAdmins";
 import { useNavigate } from "react-router-dom";
+
+const DASHBOARD_FONT_FAMILY = '"DM Sans Variable", "DM Sans", "Barlow", Arial, sans-serif';
+const DASHBOARD_INK = "#06123A";
+const DASHBOARD_MUTED = "#5E6B8D";
 
 function IconButtonCard({
   title,
@@ -31,20 +35,45 @@ function IconButtonCard({
     <Box
       onClick={onClick}
       sx={{
-        p: 2,
-        borderRadius: 2,
-        border: `1px solid ${tokens.border}`,
+        p: { xs: 2, md: 2.5 },
+        borderRadius: { xs: "16px", md: "20px" },
+        border: `1px solid #E5ECF7`,
         background: tokens.bg,
         cursor: onClick ? "pointer" : "default",
-        ":hover": { background: tokens.subtle, boxShadow: onClick ? 3 : undefined },
+        boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+        ":hover": onClick
+          ? {
+              transform: { xs: "none", md: "translateY(-4px)" },
+              boxShadow: "0 18px 42px rgba(6, 18, 58, 0.12)",
+              borderColor: alpha("#063BDA", 0.18),
+            }
+          : undefined,
       }}
     >
-      <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-        <Box sx={{ p: 1.2, borderRadius: 2, bgcolor: tokens.hover }}>{icon}</Box>
-        <Box>
-          <Typography fontWeight={600}>{title}</Typography>
+      <Box sx={{ display: "flex", gap: { xs: 1.5, md: 2.25 }, alignItems: "flex-start", minWidth: 0 }}>
+        <Box
+          sx={{
+            width: { xs: 52, md: 60 },
+            height: { xs: 52, md: 60 },
+            borderRadius: { xs: "14px", md: "18px" },
+            bgcolor: "#ECE9FF",
+            color: DASHBOARD_INK,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            "& svg": { fontSize: { xs: 28, md: 32 } },
+          }}
+        >
+          {icon}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ color: DASHBOARD_INK, fontWeight: 950, fontSize: { xs: 20, md: 22 }, lineHeight: 1.12, overflowWrap: "anywhere" }}>
+            {title}
+          </Typography>
           {subtitle && (
-            <Typography variant="body2" sx={{ mt: 0.5, color: tokens.textMuted }}>
+            <Typography variant="body2" sx={{ mt: 0.75, color: DASHBOARD_MUTED, fontWeight: 800, lineHeight: 1.4, overflowWrap: "anywhere" }}>
               {subtitle}
             </Typography>
           )}
@@ -115,7 +144,17 @@ export default function OwnerPharmacyDetailPage({
   };
 
   return (
-    <Box sx={{ width: "100%", maxWidth: "none", mx: "auto", px: { xs: 0, sm: 1.5, md: 2, xl: 3 }, py: { xs: 2, md: 3 } }}>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "none",
+        mx: "auto",
+        px: { xs: 0, sm: 1.5, md: 2, xl: 3 },
+        py: { xs: 2, md: 3 },
+        color: DASHBOARD_INK,
+        fontFamily: DASHBOARD_FONT_FAMILY,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -125,25 +164,42 @@ export default function OwnerPharmacyDetailPage({
           gap: 2,
         }}
       >
-        <Box>
-          <Typography variant="h5" fontWeight={700}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography sx={{ fontSize: { xs: 30, md: 42 }, lineHeight: 1.04, fontWeight: 950, color: DASHBOARD_INK, overflowWrap: "anywhere" }}>
             {pharmacy.name}
           </Typography>
-          <Typography sx={{ color: tokens.textMuted }}>
+          <Typography sx={{ mt: 1, color: DASHBOARD_MUTED, fontSize: { xs: 16, md: 18 }, fontWeight: 800, lineHeight: 1.45, overflowWrap: "anywhere" }}>
             {[pharmacy.street_address, pharmacy.suburb, pharmacy.state, pharmacy.postcode].filter(Boolean).join(", ")}
           </Typography>
         </Box>
         <Box sx={{ display: "flex", gap: 1, width: { xs: "100%", md: "auto" } }}>
-          <Button variant="outlined" onClick={() => (onEditPharmacy ? onEditPharmacy(pharmacy) : navigate(resolvePath("manage-pharmacies/my-pharmacies")))}>Edit</Button>
+          <Button
+            variant="outlined"
+            onClick={() => (onEditPharmacy ? onEditPharmacy(pharmacy) : navigate(resolvePath("manage-pharmacies/my-pharmacies")))}
+            sx={{
+              minHeight: 44,
+              px: 2.25,
+              borderRadius: "12px",
+              borderColor: alpha("#063BDA", 0.16),
+              color: "#4C0DDE",
+              fontWeight: 900,
+              "&:hover": {
+                borderColor: "#063BDA",
+                bgcolor: alpha("#063BDA", 0.04),
+              },
+            }}
+          >
+            Edit
+          </Button>
         </Box>
       </Box>
 
       <Box
         sx={{
-          mt: 2,
+          mt: 3,
           display: "grid",
-          gap: 1.5,
-          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "repeat(3, 1fr)" },
+          gap: { xs: 1.5, md: 2 },
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" },
         }}
       >
         <IconButtonCard title="Manage Staff" subtitle="Add/remove team" icon={<PeopleIcon />} onClick={handleManageStaff} />
@@ -158,10 +214,11 @@ export default function OwnerPharmacyDetailPage({
         <Box
           sx={{
             mb: 3,
-            p: 2.5,
-            borderRadius: 3,
-            border: `1px solid ${tokens.border}`,
+            p: { xs: 2.25, md: 3 },
+            borderRadius: { xs: "18px", md: "22px" },
+            border: `1px solid #E5ECF7`,
             background: tokens.bg,
+            boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
           }}
         >
           <Box
@@ -174,10 +231,10 @@ export default function OwnerPharmacyDetailPage({
             }}
           >
             <Box>
-              <Typography variant="h6" sx={{ mb: 0.5 }}>
+              <Typography sx={{ mb: 0.75, color: DASHBOARD_INK, fontSize: { xs: 22, md: 26 }, fontWeight: 950, lineHeight: 1.12 }}>
                 Worker Request Publishing
               </Typography>
-              <Typography variant="body2" sx={{ color: tokens.textMuted, maxWidth: 720 }}>
+              <Typography variant="body2" sx={{ color: DASHBOARD_MUTED, maxWidth: 720, fontWeight: 800, fontSize: { xs: 15, md: 16 }, lineHeight: 1.45 }}>
                 Allow pharmacy staff shift cover requests and swap requests to be published to your team automatically?
               </Typography>
             </Box>
@@ -203,7 +260,7 @@ export default function OwnerPharmacyDetailPage({
           ) : null}
         </Box>
 
-        <Typography variant="h6" sx={{ mb: 1 }}>
+        <Typography sx={{ mb: 1.5, color: DASHBOARD_INK, fontSize: { xs: 24, md: 30 }, fontWeight: 950, lineHeight: 1.12 }}>
           Staff
         </Typography>
         <StaffManager
@@ -216,7 +273,7 @@ export default function OwnerPharmacyDetailPage({
       </Box>
 
       <Box sx={{ mt: 3 }} ref={locumSectionRef}>
-        <Typography variant="h6" sx={{ mb: 1 }}>
+        <Typography sx={{ mb: 1.5, color: DASHBOARD_INK, fontSize: { xs: 24, md: 30 }, fontWeight: 950, lineHeight: 1.12 }}>
           Favourite Locums
         </Typography>
         <LocumManager

@@ -28,7 +28,7 @@ import AddIcon from "@mui/icons-material/Add";
 import LinkIcon from "@mui/icons-material/Link";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
 import {
   createMembershipInviteLinkService,
   deleteMembershipService,
@@ -40,7 +40,6 @@ import {
   WorkType,
   coerceRole,
   coerceWorkType,
-  surface,
   requiredUserRoleForMembership,
   UserPortalRole,
 } from "./types";
@@ -58,6 +57,40 @@ const inviteTextFieldSx = {
   "& .MuiInputLabel-root": {
     backgroundColor: "background.paper",
     px: 0.5,
+  },
+};
+const DASHBOARD_FONT_FAMILY = '"DM Sans Variable", "DM Sans", "Barlow", Arial, sans-serif';
+const DASHBOARD_INK = "#06123A";
+const DASHBOARD_MUTED = "#5E6B8D";
+const LIGHT_BORDER = "#E5ECF7";
+
+const actionButtonSx = {
+  minHeight: 48,
+  px: 2.25,
+  borderRadius: "14px",
+  fontWeight: 900,
+  textTransform: "none",
+};
+
+const filterControlSx = {
+  minWidth: { xs: "100%", sm: 220 },
+  "& .MuiOutlinedInput-root": {
+    borderRadius: "14px",
+    bgcolor: "#FFFFFF",
+    fontWeight: 800,
+  },
+};
+
+const memberCardSx = {
+  borderRadius: { xs: "16px", md: "20px" },
+  borderColor: LIGHT_BORDER,
+  backgroundColor: "#FFFFFF",
+  boxShadow: "0 8px 24px rgba(6, 18, 58, 0.06)",
+  minWidth: 0,
+  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  "&:hover": {
+    transform: { xs: "none", md: "translateY(-4px)" },
+    boxShadow: "0 18px 42px rgba(6, 18, 58, 0.12)",
   },
 };
 
@@ -124,9 +157,6 @@ type LocumManagerProps = {
 };
 
 export default function LocumManager({ pharmacyId, memberships, onMembershipsChanged, loading = false }: LocumManagerProps) {
-  const theme = useTheme();
-  const tokens = surface(theme);
-
   const derivedLocums: Locum[] = useMemo(() => {
     return (memberships || []).map((m) => {
       const fullName =
@@ -432,15 +462,35 @@ export default function LocumManager({ pharmacyId, memberships, onMembershipsCha
   };
 
   return (
-    <Box>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2, flexWrap: "wrap" }}>
-        <Button variant="outlined" startIcon={<FilterListIcon />} onClick={() => setSortBy("name")}>
+    <Box sx={{ fontFamily: DASHBOARD_FONT_FAMILY }}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ mb: 2.5, alignItems: { lg: "center" }, flexWrap: "wrap" }}>
+        <Button
+          variant="outlined"
+          startIcon={<FilterListIcon />}
+          onClick={() => setSortBy("name")}
+          sx={{
+            ...actionButtonSx,
+            borderColor: alpha("#063BDA", 0.16),
+            color: "#4C0DDE",
+            "&:hover": { borderColor: "#063BDA", bgcolor: alpha("#063BDA", 0.04) },
+          }}
+        >
           Sort: Name
         </Button>
-        <Button variant="outlined" startIcon={<FilterListIcon />} onClick={() => setSortBy("workType")}>
+        <Button
+          variant="outlined"
+          startIcon={<FilterListIcon />}
+          onClick={() => setSortBy("workType")}
+          sx={{
+            ...actionButtonSx,
+            borderColor: alpha("#063BDA", 0.16),
+            color: "#4C0DDE",
+            "&:hover": { borderColor: "#063BDA", bgcolor: alpha("#063BDA", 0.04) },
+          }}
+        >
           Sort: Work Type
         </Button>
-        <FormControl sx={{ minWidth: 180 }}>
+        <FormControl sx={filterControlSx}>
           <InputLabel id="role-filter">Filter role</InputLabel>
           <Select
             labelId="role-filter"
@@ -456,7 +506,7 @@ export default function LocumManager({ pharmacyId, memberships, onMembershipsCha
             ))}
           </Select>
         </FormControl>
-        <FormControl sx={{ minWidth: 200 }}>
+        <FormControl sx={filterControlSx}>
           <InputLabel id="work-type-filter">Filter work type</InputLabel>
           <Select
             labelId="work-type-filter"
@@ -472,23 +522,38 @@ export default function LocumManager({ pharmacyId, memberships, onMembershipsCha
             ))}
           </Select>
         </FormControl>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openInviteDialog}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={openInviteDialog}
+          sx={{ ...actionButtonSx, boxShadow: "0 12px 28px rgba(20, 62, 234, 0.18)" }}
+        >
           Invite Favourite
         </Button>
-        <Button variant="outlined" startIcon={<LinkIcon />} onClick={openLinkDialog}>
+        <Button
+          variant="outlined"
+          startIcon={<LinkIcon />}
+          onClick={openLinkDialog}
+          sx={{
+            ...actionButtonSx,
+            borderColor: alpha("#063BDA", 0.16),
+            color: "#4C0DDE",
+            "&:hover": { borderColor: "#063BDA", bgcolor: alpha("#063BDA", 0.04) },
+          }}
+        >
           Generate Link
         </Button>
       </Stack>
 
       {showSkeleton ? (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
           {Array.from({ length: 3 }).map((_, index) => (
             <Card
               key={`locum-skeleton-${index}`}
               variant="outlined"
-              sx={{ flex: "1 1 420px", maxWidth: 560, borderColor: tokens.border, backgroundColor: tokens.bg }}
+              sx={memberCardSx}
             >
-              <CardContent sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
+              <CardContent sx={{ display: "flex", gap: 2, alignItems: "flex-start", p: { xs: 2, md: 2.5 } }}>
                 <Skeleton variant="circular" width={40} height={40} />
                 <Box sx={{ flex: 1 }}>
                   <Skeleton variant="text" width="80%" />
@@ -502,39 +567,46 @@ export default function LocumManager({ pharmacyId, memberships, onMembershipsCha
       ) : filteredLocums.length === 0 ? (
         <Alert severity="info">No favourite locums yet. Use "Invite Favourite" to add people.</Alert>
       ) : (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
           {filteredLocums.map((locum) => (
             <Card
               key={locum.id}
               variant="outlined"
-              sx={{ flex: "1 1 420px", maxWidth: 560, borderColor: tokens.border, backgroundColor: tokens.bg }}
+              sx={memberCardSx}
             >
-              <CardContent sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-                <Stack direction="row" spacing={1}>
-                  <Chip label={locum.role.replace("_", " ")} color={getRoleChipColor(locum.role)} />
-                  <Chip label={locum.workType.replace("_", " ")} variant="outlined" />
+              <CardContent sx={{ p: { xs: 2, md: 2.5 }, "&:last-child": { pb: { xs: 2, md: 2.5 } } }}>
+                <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" alignItems="center">
+                    <Chip label={locum.role.replace("_", " ")} color={getRoleChipColor(locum.role)} sx={{ fontWeight: 800 }} />
+                    <Chip label={locum.workType.replace("_", " ")} variant="outlined" sx={{ fontWeight: 800 }} />
+                  </Stack>
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ minWidth: 0 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ color: DASHBOARD_INK, fontWeight: 950, fontSize: { xs: 20, md: 22 }, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                        {locum.name}
+                      </Typography>
+                      {locum.email && (
+                        <Typography sx={{ mt: 0.5, color: DASHBOARD_MUTED, fontWeight: 700, fontSize: 15, lineHeight: 1.45, overflowWrap: "anywhere" }}>
+                          {locum.email}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Box sx={{ flexShrink: 0 }}>
+                      <Tooltip title="Remove favourite">
+                        <span>
+                          <IconButton
+                            color="error"
+                            onClick={() => setConfirmRemove(locum)}
+                            disabled={deleteLoadingId === locum.id}
+                            sx={{ border: `1px solid ${alpha("#EF4444", 0.18)}` }}
+                          >
+                            {deleteLoadingId === locum.id ? <CircularProgress size={16} /> : <DeleteOutlineIcon fontSize="small" />}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Box>
+                  </Stack>
                 </Stack>
-                <Box sx={{ ml: 1 }}>
-                  <Typography fontWeight={600}>{locum.name}</Typography>
-                  {locum.email && (
-                    <Typography variant="body2" sx={{ color: tokens.textMuted }}>
-                      {locum.email}
-                    </Typography>
-                  )}
-                </Box>
-                <Box sx={{ ml: "auto" }}>
-                  <Tooltip title="Remove favourite">
-                    <span>
-                      <IconButton
-                        color="error"
-                        onClick={() => setConfirmRemove(locum)}
-                        disabled={deleteLoadingId === locum.id}
-                      >
-                        {deleteLoadingId === locum.id ? <CircularProgress size={16} /> : <DeleteOutlineIcon fontSize="small" />}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                </Box>
               </CardContent>
             </Card>
           ))}

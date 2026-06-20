@@ -105,6 +105,8 @@ type StaffManagerProps = {
     loading?: boolean;
     pharmacyName?: string;
     category?: 'staff' | 'locum';
+    onMessageMember?: (memberId: string | number) => void;
+    messagingMemberId?: string | number | null;
 };
 
 export default function StaffManager({
@@ -113,7 +115,9 @@ export default function StaffManager({
     onMembershipsChanged,
     loading = false,
     pharmacyName,
-    category
+    category,
+    onMessageMember,
+    messagingMemberId = null,
 }: StaffManagerProps) {
     const { user } = useAuth();
     const baseInviteUrl = process.env.EXPO_PUBLIC_WEB_URL?.trim() || 'https://www.chemisttasker.com';
@@ -516,10 +520,23 @@ export default function StaffManager({
                         disabled={deleteLoadingId === item.id}
                         style={styles.deleteButton}
                     />
+                    <View style={styles.cardActions}>
+                        {onMessageMember ? (
+                            <Button
+                                mode="text"
+                                onPress={() => onMessageMember(item.id)}
+                                loading={messagingMemberId === item.id}
+                                disabled={messagingMemberId === item.id}
+                                compact
+                            >
+                                Message
+                            </Button>
+                        ) : null}
+                    </View>
                 </Card.Content>
             </Card>
         ),
-        [deleteLoadingId]
+        [deleteLoadingId, messagingMemberId, onMessageMember]
     );
 
     return (
@@ -868,6 +885,10 @@ const styles = StyleSheet.create({
     deleteButton: {
         margin: 0,
         marginLeft: 8,
+    },
+    cardActions: {
+        justifyContent: 'center',
+        alignItems: 'flex-end',
     },
     emptyText: { textAlign: 'center', padding: 32, color: surfaceTokens.textMuted },
     modal: { backgroundColor: surfaceTokens.bg, padding: 20, margin: 20, borderRadius: 8, maxHeight: '80%' },

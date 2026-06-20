@@ -24,7 +24,9 @@ import {
     Divider,
     HelperText,
     Menu,
+    Portal,
 } from 'react-native-paper';
+import { TimePickerModal } from 'react-native-paper-dates';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
@@ -47,7 +49,7 @@ type Props = {
     pharmacyId?: string;
     onSuccess?: () => void;
     onCancel?: () => void;
-    onContinueLater?: () => void;
+    onContinueLater?: () => void | Promise<void>;
     showSetupHero?: boolean;
 };
 
@@ -76,6 +78,22 @@ const TABS = [
     { label: 'Rate', shortLabel: 'Rate', icon: 'cash' },
     { label: 'About', shortLabel: 'About', icon: 'message' },
 ];
+
+const parseTimeValue = (value?: string) => {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value ?? '');
+    if (!match) {
+        return { hours: 9, minutes: 0 };
+    }
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return { hours: 9, minutes: 0 };
+    }
+    return { hours: Math.min(23, Math.max(0, hours)), minutes: Math.min(59, Math.max(0, minutes)) };
+};
+
+const formatTimeValue = (hours: number, minutes: number) =>
+    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 
 export default function PharmacyForm({
     mode,
@@ -185,6 +203,7 @@ export default function PharmacyForm({
     // UI Menus
     const [rateMenuVisible, setRateMenuVisible] = useState(false);
     const [stateMenuVisible, setStateMenuVisible] = useState(false);
+    const [activeTimeField, setActiveTimeField] = useState<null | { key: string; label: string }>(null);
     const resetToSavedState = async () => {
         const initial = initialStateRef.current;
         setForm(initial.form);
@@ -504,14 +523,14 @@ export default function PharmacyForm({
 
     const handleContinueLater = async () => {
         if (!hasDraftContent) {
-            if (onContinueLater) onContinueLater();
+            if (onContinueLater) await onContinueLater();
             else if (onCancel) onCancel();
             else router.back();
             return;
         }
         await persistPharmacy({
-            afterSave: () => {
-                if (onContinueLater) onContinueLater();
+            afterSave: async () => {
+                if (onContinueLater) await onContinueLater();
                 else if (onCancel) onCancel();
                 else router.back();
             },
@@ -814,10 +833,10 @@ export default function PharmacyForm({
                             {activeTab === 4 && (
                                 <>
                                     <Text style={styles.helperText}>Format: HH:MM (e.g. 09:00, 17:30)</Text>
-                                    <HoursRow label="Weekdays" startKey="weekdays_start" endKey="weekdays_end" form={form} setForm={setForm} />
-                                    <HoursRow label="Saturdays" startKey="saturdays_start" endKey="saturdays_end" form={form} setForm={setForm} />
-                                    <HoursRow label="Sundays" startKey="sundays_start" endKey="sundays_end" form={form} setForm={setForm} />
-                                    <HoursRow label="Public Holidays" startKey="public_holidays_start" endKey="public_holidays_end" form={form} setForm={setForm} />
+                                    <HoursRow label="Weekdays" startKey="weekdays_start" endKey="weekdays_end" form={form} setActiveTimeField={setActiveTimeField} />
+                                    <HoursRow label="Saturdays" startKey="saturdays_start" endKey="saturdays_end" form={form} setActiveTimeField={setActiveTimeField} />
+                                    <HoursRow label="Sundays" startKey="sundays_start" endKey="sundays_end" form={form} setActiveTimeField={setActiveTimeField} />
+                                    <HoursRow label="Public Holidays" startKey="public_holidays_start" endKey="public_holidays_end" form={form} setActiveTimeField={setActiveTimeField} />
                                 </>
                             )}
 
@@ -982,31 +1001,66 @@ export default function PharmacyForm({
                         </View>
                     </ScrollView>
                 )}
+
+                <Portal>
+                    <TimePickerModal
+                        visible={Boolean(activeTimeField)}
+                        onDismiss={() => setActiveTimeField(null)}
+                        onConfirm={({ hours, minutes }) => {
+                            if (!activeTimeField) return;
+                            setForm((prev) => ({
+                                ...prev,
+                                [activeTimeField.key]: formatTimeValue(hours, minutes),
+                            }));
+                            setActiveTimeField(null);
+                        }}
+                        hours={parseTimeValue(activeTimeField ? form[activeTimeField.key as keyof typeof form] as string : '').hours}
+                        minutes={parseTimeValue(activeTimeField ? form[activeTimeField.key as keyof typeof form] as string : '').minutes}
+                        label={activeTimeField ? `Select ${activeTimeField.label}` : 'Select time'}
+                        use24HourClock
+                    />
+                </Portal>
             </KeyboardAvoidingView>
         </SafeAreaView >
     );
 }
 
-const HoursRow = ({ label, startKey, endKey, form, setForm }: any) => (
+const HoursRow = ({ label, startKey, endKey, form, setActiveTimeField }: any) => (
     <View style={{ marginBottom: 16 }}>
         <Text style={{ fontWeight: '600', marginBottom: 4 }}>{label}</Text>
         <View style={{ flexDirection: 'row', gap: 12 }}>
-            <TextInput
-                label="Start"
-                value={form[startKey]}
-                onChangeText={v => setForm((p: any) => ({ ...p, [startKey]: v }))}
-                mode="outlined"
-                style={{ flex: 1, backgroundColor: surfaceTokens.bg }}
-                placeholder="09:00"
-            />
-            <TextInput
-                label="End"
-                value={form[endKey]}
-                onChangeText={v => setForm((p: any) => ({ ...p, [endKey]: v }))}
-                mode="outlined"
-                style={{ flex: 1, backgroundColor: surfaceTokens.bg }}
-                placeholder="17:00"
-            />
+            <TouchableOpacity
+                style={styles.timeField}
+                activeOpacity={0.85}
+                onPress={() => setActiveTimeField({ key: startKey, label: `${label} start time` })}
+            >
+                <TextInput
+                    label="Start"
+                    value={form[startKey]}
+                    mode="outlined"
+                    style={styles.timeInput}
+                    placeholder="09:00"
+                    editable={false}
+                    pointerEvents="none"
+                    right={<TextInput.Icon icon="clock-outline" />}
+                />
+            </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.timeField}
+                activeOpacity={0.85}
+                onPress={() => setActiveTimeField({ key: endKey, label: `${label} end time` })}
+            >
+                <TextInput
+                    label="End"
+                    value={form[endKey]}
+                    mode="outlined"
+                    style={styles.timeInput}
+                    placeholder="17:00"
+                    editable={false}
+                    pointerEvents="none"
+                    right={<TextInput.Icon icon="clock-outline" />}
+                />
+            </TouchableOpacity>
         </View>
     </View>
 );
@@ -1175,6 +1229,12 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 980,
         alignSelf: 'center',
+    },
+    timeField: {
+        flex: 1,
+    },
+    timeInput: {
+        backgroundColor: surfaceTokens.bg,
     },
     tabsOuter: {
         alignItems: 'center',

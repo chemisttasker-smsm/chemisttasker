@@ -48,21 +48,42 @@ export default function EscalationStepper({
     if (!allowedKeys.size) {
         ESCALATION_LEVELS.forEach((level) => allowedKeys.add(level));
     }
-    const levelSequence = ESCALATION_LEVELS;
+    
+    // Filter to only show available escalation levels (matching web behavior)
+    const levelSequence = ESCALATION_LEVELS.filter((level) => allowedKeys.has(level));
     const currentIndex = Math.max(0, levelSequence.indexOf(currentLevel));
     const selectedIndex = levelSequence.indexOf(selectedLevel);
     const uiCurrentIndex = showPrivateFirst ? -1 : currentIndex;
     const resolveLabel = (level: EscalationLevelKey) =>
         level === 'PLATFORM' ? 'Chemisttasker' : labelOverrides?.[level] ?? getLevelLabel(level);
 
-    const canEscalate =
+    // Check if can escalate to selected level
+    const canEscalateToSelected =
         selectedIndex > uiCurrentIndex &&
         selectedIndex !== -1 &&
         allowedKeys.has(levelSequence[selectedIndex]);
 
+    // Fallback: check next available level for escalation suggestion
+    const nextLevelIndex = currentIndex + 1;
+    const hasNextLevel = nextLevelIndex < levelSequence.length && allowedKeys.has(levelSequence[nextLevelIndex]);
+
     return (
         <View>
             <View style={styles.container}>
+                {/* Background Track */}
+                <View style={[styles.track, { left: 20, right: 20 }]} />
+                
+                {/* Progress Track */}
+                <View 
+                    style={[
+                        styles.progressTrack, 
+                        { 
+                            width: `${Math.min(100, Math.max(0, ((Math.max(selectedIndex, uiCurrentIndex) + (showPrivateFirst ? 1 : 0)) / Math.max(1, levelSequence.length - 1)) * 100))}%`,
+                            left: 20,
+                        } 
+                    ]} 
+                />
+
                 {showPrivateFirst && (
                     <Surface style={[styles.stepWrap, styles.stepItem]} elevation={0}>
                         <View style={[styles.stepConnector, styles.stepConnectorReached]} />
@@ -151,7 +172,7 @@ export default function EscalationStepper({
                         <Text style={styles.escalateText}>Escalate to the next audience to find the right candidate.</Text>
                     </View>
                 </View>
-            ) : canEscalate ? (
+            ) : canEscalateToSelected ? (
                 <View style={styles.escalateBox}>
                     <View style={styles.escalateIcon}>
                         <IconButton icon="trending-up" size={24} iconColor="#fff" style={styles.stepIcon} />
@@ -162,6 +183,20 @@ export default function EscalationStepper({
                     </View>
                     <Button mode="contained" style={styles.escalateButton} onPress={() => onEscalate(shift, levelSequence[selectedIndex])}>
                         Escalate to {resolveLabel(levelSequence[selectedIndex])}
+                    </Button>
+                </View>
+            ) : hasNextLevel ? (
+                // Fallback: Show escalation suggestion for next available level
+                <View style={styles.escalateBox}>
+                    <View style={styles.escalateIcon}>
+                        <IconButton icon="trending-up" size={24} iconColor="#fff" style={styles.stepIcon} />
+                    </View>
+                    <View style={styles.escalateCopy}>
+                        <Text style={styles.escalateTitle}>Ready to widen your search?</Text>
+                        <Text style={styles.escalateText}>Escalate to the next audience to find the right candidate.</Text>
+                    </View>
+                    <Button mode="contained" style={styles.escalateButton} onPress={() => onEscalate(shift, levelSequence[nextLevelIndex])}>
+                        Escalate to {resolveLabel(levelSequence[nextLevelIndex])}
                     </Button>
                 </View>
             ) : null}

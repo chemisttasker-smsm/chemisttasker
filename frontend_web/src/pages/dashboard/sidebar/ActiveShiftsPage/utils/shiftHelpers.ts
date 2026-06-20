@@ -5,6 +5,7 @@ export type CustomEscalationLevelKey = 'FULL_PART_TIME' | 'LOCUM_CASUAL' | 'OWNE
 export const PUBLIC_LEVEL_KEY: CustomEscalationLevelKey = 'PLATFORM';
 export const COMMUNITY_LEVEL_KEY: CustomEscalationLevelKey = 'LOCUM_CASUAL';
 export const NETWORK_LEVEL_KEY: CustomEscalationLevelKey = 'FULL_PART_TIME';
+const ALL_LEVELS: CustomEscalationLevelKey[] = ['FULL_PART_TIME', 'LOCUM_CASUAL', 'OWNER_CHAIN', 'ORG_CHAIN', 'PLATFORM'];
 
 export function getCurrentLevelKey(shift: Shift): CustomEscalationLevelKey {
     const shiftAny = shift as any;
@@ -15,10 +16,17 @@ export function getCurrentLevelKey(shift: Shift): CustomEscalationLevelKey {
     return 'FULL_PART_TIME';
 }
 
-export function deriveLevelSequence(current: CustomEscalationLevelKey): CustomEscalationLevelKey[] {
-    const all: CustomEscalationLevelKey[] = ['FULL_PART_TIME', 'LOCUM_CASUAL', 'OWNER_CHAIN', 'ORG_CHAIN', 'PLATFORM'];
-    const currentIdx = all.indexOf(current);
-    return all.slice(0, currentIdx + 1);
+export function deriveLevelSequence(
+    current: CustomEscalationLevelKey,
+    allowedLevels?: string[] | null,
+): CustomEscalationLevelKey[] {
+    const allowedSet = new Set(
+        (allowedLevels || [])
+            .filter((level): level is CustomEscalationLevelKey => ALL_LEVELS.includes(level as CustomEscalationLevelKey))
+    );
+    const levels = allowedSet.size ? ALL_LEVELS.filter((level) => allowedSet.has(level)) : ALL_LEVELS;
+    const currentIdx = levels.indexOf(current);
+    return currentIdx === -1 ? levels : levels.slice(0, currentIdx + 1);
 }
 
 export function formatShiftTime(shift: Shift): string {

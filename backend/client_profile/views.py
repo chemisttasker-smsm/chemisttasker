@@ -3221,15 +3221,24 @@ class BaseShiftViewSet(viewsets.ModelViewSet):
                 employment_type__in=['LOCUM', 'SHIFT_HERO'],
             )
         elif requested_visibility == 'OWNER_CHAIN':
-            owner_pharmacies = Pharmacy.objects.filter(owner=shift.pharmacy.owner)
-            memberships_qs = memberships_qs.filter(
-                pharmacy__in=owner_pharmacies
-            )
+            owner = getattr(shift.pharmacy, 'owner', None)
+            chain_ids = Chain.objects.filter(
+                owner=owner,
+                pharmacies=shift.pharmacy,
+            ).values_list('id', flat=True) if owner else []
+            if chain_ids:
+                memberships_qs = memberships_qs.filter(
+                    pharmacy__chains__id__in=chain_ids
+                )
+            else:
+                memberships_qs = Membership.objects.none()
         elif requested_visibility == 'ORG_CHAIN':
-            org_pharmacies = Pharmacy.objects.filter(organization=shift.pharmacy.organization)
-            memberships_qs = memberships_qs.filter(
-                pharmacy__in=org_pharmacies
-            )
+            if shift.pharmacy.organization_id:
+                memberships_qs = memberships_qs.filter(
+                    pharmacy__organization_id=shift.pharmacy.organization_id
+                )
+            else:
+                memberships_qs = Membership.objects.none()
         else:
             memberships_qs = Membership.objects.none()
 
