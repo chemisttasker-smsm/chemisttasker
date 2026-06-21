@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { LogBox, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  LayoutAnimation,
+  LogBox,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Button,
@@ -60,6 +69,17 @@ const toLocalIsoDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const GOOGLE_LIBRARIES: Array<'places'> = ['places'];
+
+const DNA = {
+  ink: '#06123A',
+  muted: '#5E6B8D',
+  line: '#E5ECF7',
+  blue: '#063BDA',
+  violet: '#6D28D9',
+  magenta: '#EA0A8E',
+  cyan: '#08BEEA',
+  mint: '#00A878',
+};
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
@@ -134,6 +154,8 @@ function AvailabilityWebLocationField({
           label="Address"
           value={locationForm.streetAddress}
           onChangeText={(v) => setLocationForm((p) => ({ ...p, streetAddress: v }))}
+          style={styles.input}
+          outlineStyle={styles.inputOutline}
         />
         <HelperText type="info">Google Places key is missing for web.</HelperText>
       </>
@@ -143,7 +165,7 @@ function AvailabilityWebLocationField({
   return (
     <>
       {!isPlacesLoaded ? (
-        <TextInput mode="outlined" label="Address" value={webAddressInput} editable={false} />
+        <TextInput mode="outlined" label="Address" value={webAddressInput} editable={false} style={styles.input} outlineStyle={styles.inputOutline} />
       ) : placesLoadError ? (
         <>
           <TextInput
@@ -151,6 +173,8 @@ function AvailabilityWebLocationField({
             label="Address"
             value={locationForm.streetAddress}
             onChangeText={(v) => setLocationForm((p) => ({ ...p, streetAddress: v }))}
+            style={styles.input}
+            outlineStyle={styles.inputOutline}
           />
           <HelperText type="error">
             Google Places failed to load. Check EXPO_PUBLIC_WEB_PLACES key and referrer restrictions.
@@ -178,12 +202,13 @@ function AvailabilityWebLocationField({
             style={{
               width: '100%',
               height: 46,
-              border: '1px solid #D1D5DB',
-              borderRadius: 10,
+              border: '1px solid #DCE5F4',
+              borderRadius: 14,
               padding: '0 12px',
               fontSize: 16,
-              color: '#111827',
+              color: DNA.ink,
               backgroundColor: '#FFFFFF',
+              boxShadow: '0 10px 24px rgba(6, 18, 58, 0.05)',
             }}
           />
         </WebAutocomplete>
@@ -210,10 +235,10 @@ function AvailabilityWebLocationField({
                   center={mapCenter}
                   radius={locationForm.coverageRadiusKm * 1000}
                   options={{
-                    fillColor: '#4caf50',
-                    fillOpacity: 0.2,
-                    strokeColor: '#4caf50',
-                    strokeOpacity: 0.6,
+                    fillColor: '#08BEEA',
+                    fillOpacity: 0.16,
+                    strokeColor: '#063BDA',
+                    strokeOpacity: 0.55,
                     strokeWeight: 2,
                   }}
                 />
@@ -293,6 +318,12 @@ export default function SetAvailabilityScreen() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
 
   const showSnackbar = (msg: string, severity: 'success' | 'error') => {
     setSnackbarMsg(msg);
@@ -475,6 +506,7 @@ export default function SetAvailabilityScreen() {
       }));
 
       const createdEntries = await Promise.all(payloads.map(createUserAvailabilityService));
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setAvailabilityEntries((prev) => [...prev, ...(createdEntries as AvailabilityEntry[])]);
       setCurrentEntry(createEmptyEntry());
       setSelectedDates([]);
@@ -489,6 +521,7 @@ export default function SetAvailabilityScreen() {
   const handleDeleteEntry = async (id: number) => {
     try {
       await deleteUserAvailabilityService(id);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setAvailabilityEntries((prev) => prev.filter((e) => e.id !== id));
       showSnackbar('Slot deleted', 'success');
     } catch {
@@ -510,7 +543,7 @@ export default function SetAvailabilityScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text variant="headlineMedium" style={styles.title}>Set Your Availability</Text>
 
-        <Surface style={styles.card} elevation={1}>
+        <Surface style={styles.card} elevation={2}>
           <Text style={styles.sectionTitle}>Location & Travel</Text>
 
           <View style={{ minHeight: 56 }}>
@@ -554,182 +587,182 @@ export default function SetAvailabilityScreen() {
             </View>
           ) : null}
 
-        <View style={styles.row2}>
-          <TextInput mode="outlined" label="Suburb" value={locationForm.suburb} onChangeText={(v) => setLocationForm((p) => ({ ...p, suburb: v }))} style={styles.flex} />
-          <TextInput mode="outlined" label="State" value={locationForm.state} onChangeText={(v) => setLocationForm((p) => ({ ...p, state: v }))} style={styles.flex} />
-          <TextInput mode="outlined" label="Postcode" value={locationForm.postcode} onChangeText={(v) => setLocationForm((p) => ({ ...p, postcode: v }))} style={styles.flex} />
-        </View>
+          <View style={styles.row2}>
+            <TextInput mode="outlined" label="Suburb" value={locationForm.suburb} onChangeText={(v) => setLocationForm((p) => ({ ...p, suburb: v }))} style={[styles.input, styles.flex]} outlineStyle={styles.inputOutline} />
+            <TextInput mode="outlined" label="State" value={locationForm.state} onChangeText={(v) => setLocationForm((p) => ({ ...p, state: v }))} style={[styles.input, styles.flex]} outlineStyle={styles.inputOutline} />
+            <TextInput mode="outlined" label="Postcode" value={locationForm.postcode} onChangeText={(v) => setLocationForm((p) => ({ ...p, postcode: v }))} style={[styles.input, styles.flex]} outlineStyle={styles.inputOutline} />
+          </View>
 
-        <Menu
-          visible={radiusMenuVisible}
-          onDismiss={() => setRadiusMenuVisible(false)}
-          anchor={<Button mode="outlined" onPress={() => setRadiusMenuVisible(true)} disabled={locationForm.openToTravel}>{`Work Travel Radius: ${locationForm.coverageRadiusKm} km`}</Button>}
-        >
-          {radiusOptions.map((km) => (
-            <Menu.Item
-              key={km}
-              title={`${km} km`}
-              onPress={() => {
-                setLocationForm((p) => ({ ...p, coverageRadiusKm: km }));
-                setRadiusMenuVisible(false);
-              }}
-            />
-          ))}
-        </Menu>
-
-        <View style={styles.checkboxRow}>
-          <Checkbox
-            status={locationForm.openToTravel ? 'checked' : 'unchecked'}
-            onPress={() => setLocationForm((p) => ({ ...p, openToTravel: !p.openToTravel, travelStates: !p.openToTravel ? p.travelStates : [] }))}
-          />
-          <Text style={styles.rowText}>Willing to travel/Regional</Text>
-        </View>
-
-        {locationForm.openToTravel ? (
           <Menu
-            visible={travelMenuVisible}
-            onDismiss={() => setTravelMenuVisible(false)}
-            anchor={<Button mode="outlined" onPress={() => setTravelMenuVisible(true)}>{`Travel States: ${locationForm.travelStates.join(', ') || 'Select'}`}</Button>}
+            visible={radiusMenuVisible}
+            onDismiss={() => setRadiusMenuVisible(false)}
+            anchor={<Button mode="outlined" onPress={() => setRadiusMenuVisible(true)} disabled={locationForm.openToTravel} style={styles.outlineButton}>{`Work Travel Radius: ${locationForm.coverageRadiusKm} km`}</Button>}
           >
-            {stateOptions.map((st) => {
-              const selected = locationForm.travelStates.includes(st);
-              return (
-                <Menu.Item
-                  key={st}
-                  title={`${selected ? '[x] ' : ''}${st}`}
-                  onPress={() =>
-                    setLocationForm((p) => ({
-                      ...p,
-                      travelStates: selected ? p.travelStates.filter((s) => s !== st) : [...p.travelStates, st],
-                    }))
-                  }
-                />
-              );
-            })}
-          </Menu>
-        ) : null}
-
-        <Button mode="contained" onPress={handleSaveLocation} disabled={savingLocation || !onboardingRole} loading={savingLocation}>
-          Save Location
-        </Button>
-      </Surface>
-
-      <Surface style={styles.card} elevation={1}>
-        <Text style={styles.sectionTitle}>Add dates</Text>
-        <View style={styles.checkboxRow}>
-          <Checkbox status={notifyNewShifts ? 'checked' : 'unchecked'} onPress={() => setNotifyNewShifts((v) => !v)} />
-          <Text style={styles.rowText}>Notify me when new public shifts match my availability</Text>
-        </View>
-
-        <Surface style={styles.calendarPanel} elevation={0}>
-          <View style={styles.calendarHeader}>
-            <IconButton icon="chevron-left" size={18} onPress={() => setCalendarMonthAnchor((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))} />
-            <Text style={styles.calendarTitle}>{monthLabel}</Text>
-            <IconButton icon="chevron-right" size={18} onPress={() => setCalendarMonthAnchor((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))} />
-          </View>
-          <View style={styles.calendarWeekHead}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
-              <Text key={`${d}-${idx}`} style={styles.calendarWeekText}>{d}</Text>
+            {radiusOptions.map((km) => (
+              <Menu.Item
+                key={km}
+                title={`${km} km`}
+                onPress={() => {
+                  setLocationForm((p) => ({ ...p, coverageRadiusKm: km }));
+                  setRadiusMenuVisible(false);
+                }}
+              />
             ))}
+          </Menu>
+
+          <View style={styles.checkboxRow}>
+            <Checkbox
+              status={locationForm.openToTravel ? 'checked' : 'unchecked'}
+              onPress={() => setLocationForm((p) => ({ ...p, openToTravel: !p.openToTravel, travelStates: !p.openToTravel ? p.travelStates : [] }))}
+            />
+            <Text style={styles.rowText}>Willing to travel/Regional</Text>
           </View>
-          <View style={styles.calendarGrid}>
-            {monthCalendarCells.map((cell, idx) => {
-              if (!cell.inMonth) return <View key={`${cell.iso}-${idx}`} style={[styles.calendarCell, styles.calendarCellPad]} />;
-              const isSelected = markedDates.has(cell.iso);
-              return (
-                <TouchableOpacity
-                  key={`${cell.iso}-${idx}`}
-                  style={[styles.calendarCell, isSelected && styles.calendarCellSelected]}
-                  onPress={() => {
-                    if (currentEntry.isRecurring) {
-                      setCurrentEntry((prev) => ({ ...prev, date: cell.iso }));
-                    } else {
-                      setSelectedDates((prev) => (prev.includes(cell.iso) ? prev.filter((d) => d !== cell.iso) : [...prev, cell.iso].sort()));
+
+          {locationForm.openToTravel ? (
+            <Menu
+              visible={travelMenuVisible}
+              onDismiss={() => setTravelMenuVisible(false)}
+              anchor={<Button mode="outlined" onPress={() => setTravelMenuVisible(true)} style={styles.outlineButton}>{`Travel States: ${locationForm.travelStates.join(', ') || 'Select'}`}</Button>}
+            >
+              {stateOptions.map((st) => {
+                const selected = locationForm.travelStates.includes(st);
+                return (
+                  <Menu.Item
+                    key={st}
+                    title={`${selected ? '[x] ' : ''}${st}`}
+                    onPress={() =>
+                      setLocationForm((p) => ({
+                        ...p,
+                        travelStates: selected ? p.travelStates.filter((s) => s !== st) : [...p.travelStates, st],
+                      }))
                     }
-                  }}
-                >
-                  <Text style={[styles.calendarCellText, isSelected && styles.calendarCellTextSelected]}>{cell.day}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  />
+                );
+              })}
+            </Menu>
+          ) : null}
+
+          <Button mode="contained" onPress={handleSaveLocation} disabled={savingLocation || !onboardingRole} loading={savingLocation} style={styles.primaryButton} labelStyle={styles.primaryButtonLabel}>
+            Save Location
+          </Button>
         </Surface>
 
-        {!currentEntry.isRecurring && selectedDates.length > 0 ? (
-          <Text style={styles.hint}>Selected: {selectedDates.join(', ')}</Text>
-        ) : null}
-        {currentEntry.isRecurring && currentEntry.date ? <Text style={styles.hint}>{`Recurring start: ${currentEntry.date}`}</Text> : null}
+        <Surface style={styles.card} elevation={2}>
+          <Text style={styles.sectionTitle}>Add dates</Text>
+          <View style={styles.checkboxRow}>
+            <Checkbox status={notifyNewShifts ? 'checked' : 'unchecked'} onPress={() => setNotifyNewShifts((v) => !v)} />
+            <Text style={styles.rowText}>Notify me when new public shifts match my availability</Text>
+          </View>
 
-        <View style={styles.checkboxRow}>
-          <Checkbox
-            status={currentEntry.isAllDay ? 'checked' : 'unchecked'}
-            onPress={() =>
-              setCurrentEntry((prev) => ({
-                ...prev,
-                isAllDay: !prev.isAllDay,
-                startTime: !prev.isAllDay ? '00:00' : '09:00',
-                endTime: !prev.isAllDay ? '23:59' : '17:00',
-              }))
-            }
-          />
-          <Text style={styles.rowText}>All Day</Text>
-        </View>
-
-        <View style={styles.row2}>
-          <TextInput mode="outlined" label="Start Time" value={currentEntry.startTime} disabled={currentEntry.isAllDay} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, startTime: v }))} style={styles.flex} />
-          <TextInput mode="outlined" label="End Time" value={currentEntry.endTime} disabled={currentEntry.isAllDay} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, endTime: v }))} style={styles.flex} />
-        </View>
-        <HelperText type="info">Use HH:MM format, e.g. 09:00</HelperText>
-
-        <View style={styles.checkboxRow}>
-          <Checkbox
-            status={currentEntry.isRecurring ? 'checked' : 'unchecked'}
-            onPress={() => setCurrentEntry((p) => ({ ...p, isRecurring: !p.isRecurring, recurringDays: [], recurringEndDate: '' }))}
-          />
-          <Text style={styles.rowText}>Repeat Weekly</Text>
-        </View>
-
-        {currentEntry.isRecurring ? (
-          <>
-            <TextInput mode="outlined" label="Repeat Until" value={currentEntry.recurringEndDate || ''} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, recurringEndDate: v }))} placeholder="YYYY-MM-DD" />
-            <View style={styles.chipWrap}>
-              {weekDays.map((d) => {
-                const selected = currentEntry.recurringDays.includes(d.value);
+          <Surface style={styles.calendarPanel} elevation={0}>
+            <View style={styles.calendarHeader}>
+              <IconButton icon="chevron-left" size={18} onPress={() => setCalendarMonthAnchor((p) => new Date(p.getFullYear(), p.getMonth() - 1, 1))} />
+              <Text style={styles.calendarTitle}>{monthLabel}</Text>
+              <IconButton icon="chevron-right" size={18} onPress={() => setCalendarMonthAnchor((p) => new Date(p.getFullYear(), p.getMonth() + 1, 1))} />
+            </View>
+            <View style={styles.calendarWeekHead}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+                <Text key={`${d}-${idx}`} style={styles.calendarWeekText}>{d}</Text>
+              ))}
+            </View>
+            <View style={styles.calendarGrid}>
+              {monthCalendarCells.map((cell, idx) => {
+                if (!cell.inMonth) return <View key={`${cell.iso}-${idx}`} style={[styles.calendarCell, styles.calendarCellPad]} />;
+                const isSelected = markedDates.has(cell.iso);
                 return (
-                  <Chip key={d.value} selected={selected} onPress={() => toggleRecurringDay(d.value)} style={selected ? styles.chipSelected : styles.chip}>
-                    {d.label}
-                  </Chip>
+                  <TouchableOpacity
+                    key={`${cell.iso}-${idx}`}
+                    style={[styles.calendarCell, isSelected && styles.calendarCellSelected]}
+                    onPress={() => {
+                      if (currentEntry.isRecurring) {
+                        setCurrentEntry((prev) => ({ ...prev, date: cell.iso }));
+                      } else {
+                        setSelectedDates((prev) => (prev.includes(cell.iso) ? prev.filter((d) => d !== cell.iso) : [...prev, cell.iso].sort()));
+                      }
+                    }}
+                  >
+                    <Text style={[styles.calendarCellText, isSelected && styles.calendarCellTextSelected]}>{cell.day}</Text>
+                  </TouchableOpacity>
                 );
               })}
             </View>
-          </>
-        ) : null}
-
-        <TextInput mode="outlined" label="Notes" multiline numberOfLines={3} value={currentEntry.notes || ''} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, notes: v }))} />
-
-        <Button mode="contained" onPress={handleAddEntry} disabled={loading} loading={loading}>
-          Add Time Slot
-        </Button>
-      </Surface>
-
-      <Text style={styles.sectionTitle}>Your Time Slots</Text>
-      {availabilityEntries.length === 0 ? (
-        <Text style={styles.empty}>No time slots added yet.</Text>
-      ) : (
-        availabilityEntries.map((item) => (
-          <Surface key={item.id} style={styles.slotItem} elevation={0}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.slotTitle}>{`${item.date} - ${item.isAllDay ? 'All Day' : `${item.startTime}-${item.endTime}`}`}</Text>
-              {item.isRecurring ? (
-                <Text style={styles.slotMeta}>{`Repeats on ${(item.recurringDays || []).map((d) => weekDays[d]?.label || '').filter(Boolean).join(', ')} until ${item.recurringEndDate}`}</Text>
-              ) : null}
-              {item.notifyNewShifts ? <Text style={styles.slotMeta}>Notifications on for matching public shifts</Text> : null}
-              {item.notes ? <Text style={styles.slotMeta}>{item.notes}</Text> : null}
-            </View>
-            <Button textColor="#DC2626" onPress={() => handleDeleteEntry(item.id)}>Delete</Button>
           </Surface>
-        ))
-      )}
+
+          {!currentEntry.isRecurring && selectedDates.length > 0 ? (
+            <Text style={styles.hint}>Selected: {selectedDates.join(', ')}</Text>
+          ) : null}
+          {currentEntry.isRecurring && currentEntry.date ? <Text style={styles.hint}>{`Recurring start: ${currentEntry.date}`}</Text> : null}
+
+          <View style={styles.checkboxRow}>
+            <Checkbox
+              status={currentEntry.isAllDay ? 'checked' : 'unchecked'}
+              onPress={() =>
+                setCurrentEntry((prev) => ({
+                  ...prev,
+                  isAllDay: !prev.isAllDay,
+                  startTime: !prev.isAllDay ? '00:00' : '09:00',
+                  endTime: !prev.isAllDay ? '23:59' : '17:00',
+                }))
+              }
+            />
+            <Text style={styles.rowText}>All Day</Text>
+          </View>
+
+          <View style={styles.row2}>
+            <TextInput mode="outlined" label="Start Time" value={currentEntry.startTime} disabled={currentEntry.isAllDay} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, startTime: v }))} style={[styles.input, styles.flex]} outlineStyle={styles.inputOutline} />
+            <TextInput mode="outlined" label="End Time" value={currentEntry.endTime} disabled={currentEntry.isAllDay} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, endTime: v }))} style={[styles.input, styles.flex]} outlineStyle={styles.inputOutline} />
+          </View>
+          <HelperText type="info">Use HH:MM format, e.g. 09:00</HelperText>
+
+          <View style={styles.checkboxRow}>
+            <Checkbox
+              status={currentEntry.isRecurring ? 'checked' : 'unchecked'}
+              onPress={() => setCurrentEntry((p) => ({ ...p, isRecurring: !p.isRecurring, recurringDays: [], recurringEndDate: '' }))}
+            />
+            <Text style={styles.rowText}>Repeat Weekly</Text>
+          </View>
+
+          {currentEntry.isRecurring ? (
+            <>
+              <TextInput mode="outlined" label="Repeat Until" value={currentEntry.recurringEndDate || ''} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, recurringEndDate: v }))} placeholder="YYYY-MM-DD" style={styles.input} outlineStyle={styles.inputOutline} />
+              <View style={styles.chipWrap}>
+                {weekDays.map((d) => {
+                  const selected = currentEntry.recurringDays.includes(d.value);
+                  return (
+                    <Chip key={d.value} selected={selected} onPress={() => toggleRecurringDay(d.value)} style={selected ? styles.chipSelected : styles.chip} textStyle={selected ? styles.chipSelectedText : styles.chipText}>
+                      {d.label}
+                    </Chip>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+
+          <TextInput mode="outlined" label="Notes" multiline numberOfLines={3} value={currentEntry.notes || ''} onChangeText={(v) => setCurrentEntry((p) => ({ ...p, notes: v }))} style={styles.input} outlineStyle={styles.inputOutline} />
+
+          <Button mode="contained" onPress={handleAddEntry} disabled={loading} loading={loading} style={styles.primaryButton} labelStyle={styles.primaryButtonLabel}>
+            Add Time Slot
+          </Button>
+        </Surface>
+
+        <Text style={styles.sectionTitle}>Your Time Slots</Text>
+        {availabilityEntries.length === 0 ? (
+          <Text style={styles.empty}>No time slots added yet.</Text>
+        ) : (
+          availabilityEntries.map((item) => (
+            <Surface key={item.id} style={styles.slotItem} elevation={1}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.slotTitle}>{`${item.date} - ${item.isAllDay ? 'All Day' : `${item.startTime}-${item.endTime}`}`}</Text>
+                {item.isRecurring ? (
+                  <Text style={styles.slotMeta}>{`Repeats on ${(item.recurringDays || []).map((d) => weekDays[d]?.label || '').filter(Boolean).join(', ')} until ${item.recurringEndDate}`}</Text>
+                ) : null}
+                {item.notifyNewShifts ? <Text style={[styles.slotMeta, styles.slotMetaSuccess]}>Notifications on for matching public shifts</Text> : null}
+                {item.notes ? <Text style={styles.slotMeta}>{item.notes}</Text> : null}
+              </View>
+              <Button textColor="#DC2626" onPress={() => handleDeleteEntry(item.id)}>Delete</Button>
+            </Surface>
+          ))
+        )}
       </ScrollView>
 
       <Snackbar visible={snackbarOpen} onDismiss={() => setSnackbarOpen(false)} duration={4000}>
@@ -740,37 +773,69 @@ export default function SetAvailabilityScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1, backgroundColor: '#F7F9FF' },
   content: { padding: 16, gap: 14, paddingBottom: 32 },
-  title: { fontWeight: '700', color: '#111827' },
-  card: { borderRadius: 14, backgroundColor: '#FFFFFF', padding: 14, gap: 10 },
-  sectionTitle: { fontWeight: '700', color: '#111827' },
+  title: { fontWeight: '900', color: DNA.ink, letterSpacing: -0.4 },
+  card: {
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E8EEF8',
+    shadowColor: '#06123A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 22,
+  },
+  sectionTitle: { fontWeight: '900', color: DNA.ink },
   row2: { flexDirection: 'row', gap: 8 },
   flex: { flex: 1 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center' },
-  rowText: { color: '#374151', flexShrink: 1 },
+  input: { backgroundColor: '#FFFFFF' },
+  inputOutline: { borderRadius: 14, borderColor: '#DCE5F4' },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFF',
+    borderWidth: 1,
+    borderColor: '#E5ECF7',
+    borderRadius: 14,
+    paddingRight: 10,
+  },
+  rowText: { color: DNA.ink, flexShrink: 1, fontWeight: '700' },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { backgroundColor: '#F3F4F6' },
+  chip: { backgroundColor: '#F3F6FD' },
   chipSelected: { backgroundColor: '#EDE9FE' },
-  empty: { color: '#6B7280' },
+  chipText: { color: DNA.ink, fontWeight: '700' },
+  chipSelectedText: { color: DNA.violet, fontWeight: '900' },
+  empty: { color: DNA.muted, fontWeight: '700' },
   slotItem: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 12,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    shadowColor: '#06123A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
   },
-  slotTitle: { color: '#111827', fontWeight: '600' },
-  slotMeta: { color: '#6B7280', marginTop: 2 },
+  slotTitle: { color: DNA.ink, fontWeight: '800' },
+  slotMeta: { color: DNA.muted, marginTop: 2, fontWeight: '700' },
+  slotMetaSuccess: { color: DNA.mint },
   mapWrap: {
     height: 220,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderColor: '#DDF1F8',
+    borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: '#08BEEA',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.12,
+    shadowRadius: 22,
   },
   nativeMap: {
     width: '100%',
@@ -782,24 +847,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F9FAFB',
   },
-  calendarPanel: { borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, padding: 8, backgroundColor: '#FFFFFF' },
+  calendarPanel: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    padding: 8,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#06123A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+  },
   calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  calendarTitle: { fontWeight: '600', color: '#111827' },
+  calendarTitle: { fontWeight: '800', color: DNA.ink },
   calendarWeekHead: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 6, marginBottom: 4 },
-  calendarWeekText: { width: `${100 / 7}%`, textAlign: 'center', color: '#6B7280', fontSize: 12 },
+  calendarWeekText: { width: `${100 / 7}%`, textAlign: 'center', color: DNA.muted, fontSize: 12, fontWeight: '800' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calendarCell: {
     width: `${100 / 7}%`,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: 10,
   },
   calendarCellPad: { opacity: 0 },
-  calendarCellSelected: { backgroundColor: '#4F46E5' },
-  calendarCellText: { color: '#111827' },
-  calendarCellTextSelected: { color: '#FFFFFF', fontWeight: '600' },
-  hint: { color: '#6B7280', fontSize: 12 },
+  calendarCellSelected: { backgroundColor: '#E8F0FF' },
+  calendarCellText: { color: DNA.ink, fontWeight: '700' },
+  calendarCellTextSelected: { color: DNA.blue, fontWeight: '900' },
+  hint: { color: DNA.muted, fontSize: 12, fontWeight: '700' },
+  primaryButton: {
+    borderRadius: 14,
+    backgroundColor: DNA.blue,
+    shadowColor: '#063BDA',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+  },
+  primaryButtonLabel: {
+    fontWeight: '900',
+    letterSpacing: 0.2,
+  },
+  outlineButton: {
+    borderRadius: 14,
+    borderColor: '#DCE5F4',
+    backgroundColor: '#FFFFFF',
+  },
 });
-
-

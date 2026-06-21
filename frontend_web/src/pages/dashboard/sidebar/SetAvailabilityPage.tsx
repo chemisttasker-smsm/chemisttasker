@@ -1,5 +1,3 @@
-// src/pages/dashboard/sidebar/SetAvailabilityPage.tsx
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Alert,
@@ -19,7 +17,9 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  alpha,
 } from '@mui/material';
+import { keyframes } from '@mui/system';
 import { Close as CloseIcon } from '@mui/icons-material';
 import {
   UserAvailability,
@@ -49,6 +49,57 @@ const createEmptyEntry = (): AvailabilityDraft => ({
   notes: '',
 });
 
+const DNA = {
+  ink: '#06123A',
+  muted: '#5E6B8D',
+  line: '#E5ECF7',
+  blue: '#063BDA',
+  violet: '#6D28D9',
+  magenta: '#EA0A8E',
+  cyan: '#08BEEA',
+  mint: '#00A878',
+  surface: '#FFFFFF',
+  soft: '#F7F9FF',
+};
+
+const DASHBOARD_FONT_FAMILY = '"DM Sans Variable", "DM Sans", "Barlow", Arial, sans-serif';
+
+const fadeUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const cardSx = {
+  p: 3,
+  mb: 4,
+  borderRadius: '24px',
+  border: `1px solid ${alpha(DNA.blue, 0.08)}`,
+  background: `linear-gradient(180deg, ${DNA.surface} 0%, ${DNA.soft} 100%)`,
+  boxShadow: '0 24px 56px rgba(6, 18, 58, 0.08)',
+  animation: `${fadeUp} 420ms ease`,
+};
+
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '16px',
+    backgroundColor: '#fff',
+    boxShadow: '0 10px 24px rgba(6, 18, 58, 0.04)',
+    transition: 'box-shadow 180ms ease, transform 180ms ease',
+    '&:hover': {
+      boxShadow: '0 14px 30px rgba(6, 18, 58, 0.08)',
+    },
+    '&.Mui-focused': {
+      boxShadow: `0 0 0 4px ${alpha(DNA.blue, 0.10)}, 0 16px 32px rgba(6, 18, 58, 0.10)`,
+    },
+  },
+};
+
 export default function SetAvailabilityPage() {
   const { user, token } = useAuth();
   const [availabilityEntries, setAvailabilityEntries] = useState<AvailabilityEntry[]>([]);
@@ -71,7 +122,6 @@ export default function SetAvailabilityPage() {
   });
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
@@ -91,7 +141,7 @@ export default function SetAvailabilityPage() {
     if (locationForm.latitude != null && locationForm.longitude != null) {
       return { lat: locationForm.latitude, lng: locationForm.longitude };
     }
-    return { lat: -37.8136, lng: 144.9631 }; // Melbourne fallback
+    return { lat: -37.8136, lng: 144.9631 };
   }, [locationForm.latitude, locationForm.longitude]);
 
   const { isLoaded: isMapsLoaded } = useJsApiLoader({
@@ -99,7 +149,6 @@ export default function SetAvailabilityPage() {
     libraries: ['places'],
   });
 
-  // Load existing slots
   useEffect(() => {
     const fetchAvailability = async () => {
       try {
@@ -271,13 +320,29 @@ export default function SetAvailabilityPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
+    <Container
+      maxWidth="lg"
+      sx={{
+        py: 4,
+        color: DNA.ink,
+        fontFamily: DASHBOARD_FONT_FAMILY,
+      }}
+    >
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{
+          fontWeight: 950,
+          color: DNA.ink,
+          letterSpacing: '-0.03em',
+          animation: `${fadeUp} 360ms ease`,
+        }}
+      >
         Set Your Availability
       </Typography>
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={cardSx}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 900, color: DNA.ink }}>
           Location & Travel
         </Typography>
         <Box sx={{ display: 'grid', gap: 2 }}>
@@ -287,6 +352,7 @@ export default function SetAvailabilityPage() {
                 label="Address"
                 value={locationForm.streetAddress}
                 onChange={(e) => setLocationForm({ ...locationForm, streetAddress: e.target.value })}
+                sx={inputSx}
               />
             </Autocomplete>
           ) : (
@@ -294,9 +360,23 @@ export default function SetAvailabilityPage() {
               label="Address"
               value={locationForm.streetAddress}
               onChange={(e) => setLocationForm({ ...locationForm, streetAddress: e.target.value })}
+              sx={inputSx}
             />
           )}
-          <Box sx={{ height: 240, borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'grey.200' }}>
+          <Box
+            sx={{
+              height: 240,
+              borderRadius: 3,
+              overflow: 'hidden',
+              border: `1px solid ${alpha(DNA.cyan, 0.18)}`,
+              boxShadow: '0 22px 46px rgba(8, 190, 234, 0.14)',
+              transition: 'transform 180ms ease, box-shadow 180ms ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 28px 54px rgba(8, 190, 234, 0.18)',
+              },
+            }}
+          >
             {isMapsLoaded && (
               <GoogleMap
                 center={mapCenter}
@@ -311,10 +391,10 @@ export default function SetAvailabilityPage() {
                       center={mapCenter}
                       radius={locationForm.coverageRadiusKm * 1000}
                       options={{
-                        fillColor: '#4caf50',
-                        fillOpacity: 0.2,
-                        strokeColor: '#4caf50',
-                        strokeOpacity: 0.6,
+                        fillColor: '#08BEEA',
+                        fillOpacity: 0.16,
+                        strokeColor: '#063BDA',
+                        strokeOpacity: 0.55,
                         strokeWeight: 2,
                       }}
                     />
@@ -323,27 +403,27 @@ export default function SetAvailabilityPage() {
               </GoogleMap>
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField
               label="Suburb"
               value={locationForm.suburb}
               onChange={(e) => setLocationForm({ ...locationForm, suburb: e.target.value })}
-              sx={{ flex: 1 }}
+              sx={{ ...inputSx, flex: 1 }}
             />
             <TextField
               label="State"
               value={locationForm.state}
               onChange={(e) => setLocationForm({ ...locationForm, state: e.target.value })}
-              sx={{ flex: 1 }}
+              sx={{ ...inputSx, flex: 1 }}
             />
             <TextField
               label="Postcode"
               value={locationForm.postcode}
               onChange={(e) => setLocationForm({ ...locationForm, postcode: e.target.value })}
-              sx={{ flex: 1 }}
+              sx={{ ...inputSx, flex: 1 }}
             />
           </Box>
-          <FormControl fullWidth>
+          <FormControl fullWidth sx={inputSx}>
             <InputLabel>Work Travel Radius</InputLabel>
             <Select
               label="Work Travel Radius"
@@ -357,7 +437,7 @@ export default function SetAvailabilityPage() {
             </Select>
           </FormControl>
           {locationForm.openToTravel && (
-            <FormControl fullWidth>
+            <FormControl fullWidth sx={inputSx}>
               <InputLabel>Travel States</InputLabel>
               <Select
                 label="Travel States"
@@ -390,15 +470,38 @@ export default function SetAvailabilityPage() {
               />
             }
             label="Willing to travel/Regional"
+            sx={{
+              borderRadius: '14px',
+              px: 1,
+              py: 0.5,
+              backgroundColor: alpha(DNA.violet, 0.05),
+              '& .MuiFormControlLabel-label': { fontWeight: 700, color: DNA.ink },
+            }}
           />
-          <Button variant="contained" onClick={handleSaveLocation} disabled={savingLocation || !onboardingRole}>
+          <Button
+            variant="contained"
+            onClick={handleSaveLocation}
+            disabled={savingLocation || !onboardingRole}
+            sx={{
+              alignSelf: 'flex-start',
+              px: 3,
+              minHeight: 48,
+              borderRadius: '14px',
+              fontWeight: 900,
+              backgroundImage: 'linear-gradient(90deg, #063BDA 0%, #6D28D9 100%)',
+              boxShadow: '0 16px 30px rgba(6, 59, 218, 0.20)',
+              '&:hover': {
+                boxShadow: '0 20px 34px rgba(6, 59, 218, 0.26)',
+              },
+            }}
+          >
             {savingLocation ? 'Saving...' : 'Save Location'}
           </Button>
         </Box>
       </Paper>
 
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={{ ...cardSx, animationDelay: '80ms' }}>
+        <Typography variant="h6" gutterBottom sx={{ fontWeight: 900, color: DNA.ink }}>
           Add dates
         </Typography>
         <FormControlLabel
@@ -409,7 +512,14 @@ export default function SetAvailabilityPage() {
             />
           }
           label="Notify me when new public shifts match my availability"
-          sx={{ mb: 1 }}
+          sx={{
+            mb: 1,
+            borderRadius: '14px',
+            px: 1,
+            py: 0.5,
+            backgroundColor: alpha(DNA.mint, 0.07),
+            '& .MuiFormControlLabel-label': { fontWeight: 700, color: DNA.ink },
+          }}
         />
         <Box component="form" noValidate autoComplete="off" sx={{ display: 'grid', gap: 2 }}>
           <Box sx={{ display: 'flex', gap: 1.5, alignItems: { xs: 'stretch', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' } }}>
@@ -419,7 +529,7 @@ export default function SetAvailabilityPage() {
               value={currentEntry.date}
               onChange={(event) => setCurrentEntry((prev) => ({ ...prev, date: event.target.value }))}
               InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1 }}
+              sx={{ ...inputSx, flex: 1 }}
             />
             {!currentEntry.isRecurring && (
               <Button
@@ -433,13 +543,21 @@ export default function SetAvailabilityPage() {
                       : [...prev, formatted]
                   );
                 }}
+                sx={{
+                  minHeight: 54,
+                  borderRadius: '14px',
+                  fontWeight: 900,
+                  borderColor: alpha(DNA.blue, 0.22),
+                  color: DNA.blue,
+                  boxShadow: '0 12px 28px rgba(6, 18, 58, 0.05)',
+                }}
               >
                 {currentEntry.date && selectedDates.includes(currentEntry.date) ? 'Remove date' : 'Add selected date'}
               </Button>
             )}
           </Box>
           {!currentEntry.isRecurring && selectedDates.length > 0 && (
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ color: DNA.muted, fontWeight: 700 }}>
               Selected: {selectedDates.join(', ')}
             </Typography>
           )}
@@ -458,8 +576,15 @@ export default function SetAvailabilityPage() {
               />
             }
             label="All Day"
+            sx={{
+              borderRadius: '14px',
+              px: 1,
+              py: 0.5,
+              backgroundColor: alpha(DNA.cyan, 0.06),
+              '& .MuiFormControlLabel-label': { fontWeight: 700, color: DNA.ink },
+            }}
           />
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <TextField
               label="Start Time"
               type="time"
@@ -467,7 +592,7 @@ export default function SetAvailabilityPage() {
               value={currentEntry.startTime}
               onChange={e => setCurrentEntry({ ...currentEntry, startTime: e.target.value })}
               InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1 }}
+              sx={{ ...inputSx, flex: 1 }}
             />
             <TextField
               label="End Time"
@@ -476,7 +601,7 @@ export default function SetAvailabilityPage() {
               value={currentEntry.endTime}
               onChange={e => setCurrentEntry({ ...currentEntry, endTime: e.target.value })}
               InputLabelProps={{ shrink: true }}
-              sx={{ flex: 1 }}
+              sx={{ ...inputSx, flex: 1 }}
             />
           </Box>
           <FormControlLabel
@@ -494,6 +619,13 @@ export default function SetAvailabilityPage() {
               />
             }
             label="Repeat Weekly"
+            sx={{
+              borderRadius: '14px',
+              px: 1,
+              py: 0.5,
+              backgroundColor: alpha(DNA.magenta, 0.05),
+              '& .MuiFormControlLabel-label': { fontWeight: 700, color: DNA.ink },
+            }}
           />
           {currentEntry.isRecurring && (
             <>
@@ -503,6 +635,7 @@ export default function SetAvailabilityPage() {
                 value={currentEntry.recurringEndDate}
                 onChange={e => setCurrentEntry({ ...currentEntry, recurringEndDate: e.target.value })}
                 InputLabelProps={{ shrink: true }}
+                sx={inputSx}
               />
               <ToggleButtonGroup
                 value={currentEntry.recurringDays}
@@ -510,6 +643,23 @@ export default function SetAvailabilityPage() {
                   setCurrentEntry({ ...currentEntry, recurringDays: days as number[] })
                 }
                 aria-label="weekday selection"
+                sx={{
+                  flexWrap: 'wrap',
+                  gap: 1,
+                  '& .MuiToggleButton-root': {
+                    borderRadius: '12px !important',
+                    border: `1px solid ${alpha(DNA.blue, 0.12)} !important`,
+                    px: 1.6,
+                    fontWeight: 800,
+                    color: DNA.ink,
+                    backgroundColor: '#fff',
+                    boxShadow: '0 10px 20px rgba(6, 18, 58, 0.04)',
+                  },
+                  '& .Mui-selected': {
+                    bgcolor: `${alpha(DNA.blue, 0.10)} !important`,
+                    color: `${DNA.blue} !important`,
+                  },
+                }}
               >
                 {weekDays.map(d => (
                   <ToggleButton key={d.value} value={d.value} aria-label={d.label}>
@@ -525,24 +675,37 @@ export default function SetAvailabilityPage() {
             rows={3}
             value={currentEntry.notes ?? ''}
             onChange={e => setCurrentEntry({ ...currentEntry, notes: e.target.value })}
+            sx={inputSx}
           />
           <Button
             variant="contained"
             onClick={handleAddEntry}
             disabled={loading}
+            sx={{
+              alignSelf: 'flex-start',
+              px: 3,
+              minHeight: 48,
+              borderRadius: '14px',
+              fontWeight: 900,
+              backgroundImage: 'linear-gradient(90deg, #063BDA 0%, #6D28D9 100%)',
+              boxShadow: '0 16px 30px rgba(6, 59, 218, 0.20)',
+              '&:hover': {
+                boxShadow: '0 20px 34px rgba(6, 59, 218, 0.26)',
+              },
+            }}
           >
             {loading ? 'Adding...' : 'Add Time Slot'}
           </Button>
         </Box>
       </Paper>
 
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" gutterBottom sx={{ fontWeight: 900, color: DNA.ink }}>
         Your Time Slots
       </Typography>
       {availabilityEntries.length === 0 ? (
-        <Typography>No time slots added yet.</Typography>
+        <Typography sx={{ color: DNA.muted, fontWeight: 700 }}>No time slots added yet.</Typography>
       ) : (
-        availabilityEntries.map(e => (
+        availabilityEntries.map((e, index) => (
           <Paper
             key={e.id}
             sx={{
@@ -551,28 +714,39 @@ export default function SetAvailabilityPage() {
               alignItems: 'center',
               p: 2,
               mb: 2,
+              borderRadius: '20px',
+              border: `1px solid ${alpha(DNA.blue, 0.08)}`,
+              background: `linear-gradient(180deg, ${DNA.surface} 0%, ${DNA.soft} 100%)`,
+              boxShadow: '0 18px 42px rgba(6, 18, 58, 0.06)',
+              animation: `${fadeUp} ${420 + index * 60}ms ease`,
+              transition: 'transform 180ms ease, box-shadow 180ms ease',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 22px 48px rgba(6, 18, 58, 0.10)',
+              },
             }}
           >
             <Box>
-              <Typography>
+              <Typography sx={{ fontWeight: 900, color: DNA.ink }}>
                 {e.date} - {e.isAllDay ? 'All Day' : `${e.startTime}-${e.endTime}`}
               </Typography>
               {e.isRecurring && (
-                <Typography variant="caption">
+                <Typography variant="caption" sx={{ color: DNA.violet, fontWeight: 700 }}>
                   Repeats on {e.recurringDays.map(d => weekDays[d].label).join(', ')} until{' '}
                   {e.recurringEndDate}
                 </Typography>
               )}
               {e.notifyNewShifts && (
-                <Typography variant="caption" sx={{ display: 'block', color: 'success.main' }}>
+                <Typography variant="caption" sx={{ display: 'block', color: DNA.mint, fontWeight: 800 }}>
                   Notifications on for matching public shifts
                 </Typography>
               )}
-              {e.notes && <Typography variant="body2">{e.notes}</Typography>}
+              {e.notes && <Typography variant="body2" sx={{ color: DNA.muted, fontWeight: 600 }}>{e.notes}</Typography>}
             </Box>
             <Button
               color="error"
               onClick={() => handleDeleteEntry(e.id)}
+              sx={{ fontWeight: 900 }}
             >
               Delete
             </Button>
@@ -589,7 +763,7 @@ export default function SetAvailabilityPage() {
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbarSeverity}
-          sx={{ width: '100%' }}
+          sx={{ width: '100%', borderRadius: '14px' }}
           action={
             <IconButton size="small" color="inherit" onClick={handleCloseSnackbar}>
               <CloseIcon fontSize="small" />
@@ -600,5 +774,5 @@ export default function SetAvailabilityPage() {
         </Alert>
       </Snackbar>
     </Container>
-);
-}  
+  );
+}

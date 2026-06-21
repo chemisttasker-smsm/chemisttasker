@@ -4744,6 +4744,76 @@ class PublicShiftViewSet(BaseShiftViewSet):
 
         return qs.distinct()
 
+
+def _future_or_current_slot_q(now, today):
+    return (
+        Q(is_recurring=True, recurring_end_date__gte=today) |
+        Q(date__gt=today) |
+        Q(date=today, end_time__gte=now.time())
+    )
+
+
+def _past_slot_q(now, today):
+    return (
+        Q(is_recurring=True, recurring_end_date__lt=today) |
+        Q(date__lt=today) |
+        Q(date=today, end_time__lt=now.time())
+    )
+
+
+def _matching_shift_slot_exists(*, now, today, assigned_user_id=None, state='active'):
+    slots = ShiftSlot.objects.filter(shift_id=OuterRef('pk'))
+    slot_assignments = ShiftSlotAssignment.objects.filter(
+        shift_id=OuterRef('shift_id'),
+        slot_id=OuterRef('pk'),
+    )
+    if assigned_user_id is not None:
+        slot_assignments = slot_assignments.filter(user_id=assigned_user_id)
+
+    pending_payment = ShiftOffer.objects.filter(
+        shift_id=OuterRef('shift_id'),
+        slot_id=OuterRef('pk'),
+        status=ShiftOffer.Status.ACCEPTED_AWAITING_PAYMENT,
+    )
+
+    slots = slots.annotate(
+        has_assignment=Exists(slot_assignments),
+        has_pending_payment=Exists(pending_payment),
+    )
+
+    if state == 'active':
+        slots = slots.filter(_future_or_current_slot_q(now, today)).filter(
+            Q(has_assignment=False) | Q(has_pending_payment=True)
+        )
+    elif state == 'confirmed':
+        slots = slots.filter(_future_or_current_slot_q(now, today)).filter(
+            has_assignment=True,
+            has_pending_payment=False,
+        )
+    # elif state == 'history':
+    #     slots = slots.filter(_past_slot_q(now, today)).filter(
+    #         has_assignment=True,
+    #         has_pending_payment=False,
+    #     )
+
+# this part will be removed later
+    elif state == 'history':
+        slots = slots.filter(
+            has_assignment=True,
+            has_pending_payment=False,
+        )
+
+
+    else:
+        raise ValueError(f"Unsupported slot lifecycle state: {state}")
+
+    return Exists(slots)
+
+
+def _shift_has_past_slot_exists(*, now, today):
+    slots = ShiftSlot.objects.filter(shift_id=OuterRef('pk')).filter(_past_slot_q(now, today))
+    return Exists(slots)
+
 class ActiveShiftViewSet(BaseShiftViewSet):
     """Upcoming & unassigned shifts (no slot has an assignment)."""
     def get_queryset(self):
@@ -4759,22 +4829,13 @@ class ActiveShiftViewSet(BaseShiftViewSet):
 
         qs = qs.annotate(
             slot_count=Count('slots', distinct=True),
-            assigned_count=Count('slots__assignments', distinct=True)
+            has_active_slot=(
+                _matching_shift_slot_exists(now=now, today=today, state='active')
+            ),
         ).filter(
             Q(employment_type__in=['FULL_TIME', 'PART_TIME'], slot_count=0) |
-            Q(assigned_count__lt=F('slot_count'))
+            Q(has_active_slot=True)
         )
-
-        # Treat recurring slots as "future" through their recurring_end_date, so single-user recurring
-        # shifts aren't dropped once the first occurrence date passes.
-        future_slot_filter = (
-            Q(employment_type__in=['FULL_TIME', 'PART_TIME'], slot_count=0) |
-            Q(slots__is_recurring=True, slots__recurring_end_date__gte=today) |
-            Q(slots__date__gt=today) |
-            Q(slots__date=today, slots__end_time__gt=now.time())
-        )
-
-        qs = qs.filter(future_slot_filter)
 
         qs = qs.distinct()
         try:
@@ -4908,7 +4969,7 @@ class ActiveShiftViewSet(BaseShiftViewSet):
         return Response(data)
 
 class ConfirmedShiftViewSet(BaseShiftViewSet):
-    """Upcoming & in-progress fully assigned shifts."""
+    """Upcoming & in-progress shifts with at least one confirmed slot."""
     def get_queryset(self):
         user  = self.request.user
         now   = timezone.now()
@@ -4919,19 +4980,15 @@ class ConfirmedShiftViewSet(BaseShiftViewSet):
         qs = qs.filter(
             Q(created_by=user) | Q(pharmacy__in=self._managed_pharmacies(user))
         )
-        qs = qs.filter(payment_status__in=['PAID', 'NOT_REQUIRED'])
-
         qs = qs.annotate(
-            slot_count=Count('slots', distinct=True),
-            assigned_count=Count('slots__assignments', distinct=True)
-        ).filter(assigned_count__gte=1)
+            has_confirmed_slot=_matching_shift_slot_exists(
+                now=now,
+                today=today,
+                state='confirmed',
+            )
+        ).filter(has_confirmed_slot=True)
 
-        qs = qs.filter(
-            Q(slots__date__gt=today) |
-            Q(slots__date=today, slots__end_time__gte=now.time())
-        )
-
-        return qs.distinct()
+        return qs
 
     # Move this entire method OUTSIDE of get_queryset
     @action(detail=True, methods=['post'], url_path='view_assigned_profile')
@@ -5003,7 +5060,7 @@ class ConfirmedShiftViewSet(BaseShiftViewSet):
         })
 
 class HistoryShiftViewSet(BaseShiftViewSet):
-    """All‐past, fully assigned shifts (slots ended or recurring_end_date passed)."""
+    """History shifts for managed pharmacies."""
     def get_queryset(self):
         user = self.request.user
         now  = timezone.now()
@@ -5015,24 +5072,15 @@ class HistoryShiftViewSet(BaseShiftViewSet):
             Q(created_by=user) | Q(pharmacy__in=self._managed_pharmacies(user))
         )
 
-        # fully assigned
         qs = qs.annotate(
-            slot_count=Count('slots', distinct=True),
-            assigned_count=Count('slots__assignments', distinct=True)
-        ).filter(assigned_count__gte=F('slot_count'))
+            has_history_slot=_matching_shift_slot_exists(
+                now=now,
+                today=today,
+                state='history',
+            )
+        ).filter(has_history_slot=True)
 
-        # Only include shifts whose slot occurrences are entirely in the past
-        past_oneoff = (
-            Q(slots__date__lt=today) |
-            Q(slots__date=today, slots__end_time__lt=now.time())
-        )
-        past_recurring = Q(
-            slots__is_recurring=True,
-            slots__recurring_end_date__lt=today
-        )
-        qs = qs.filter(past_oneoff | past_recurring)
-
-        return qs.distinct()
+        return qs
 
 
     @action(detail=True, methods=['post'], url_path='view_assigned_profile')
@@ -6996,13 +7044,15 @@ class MyConfirmedShiftsViewSet(BaseShiftViewSet):
 
         qs = super().get_queryset().filter(
             slot_assignments__user=user
-        ).filter(
-            payment_status__in=['PAID', 'NOT_REQUIRED']
-        ).filter(
-            # at least one slot still in progress
-            Q(slots__date__gt=today) |
-            Q(slots__date=today, slots__end_time__gte=now.time())
         )
+        qs = qs.annotate(
+            has_confirmed_slot=_matching_shift_slot_exists(
+                now=now,
+                today=today,
+                assigned_user_id=user.id,
+                state='confirmed',
+            )
+        ).filter(has_confirmed_slot=True)
 
         return qs.distinct()
 
@@ -7025,11 +7075,14 @@ class MyHistoryShiftsViewSet(BaseShiftViewSet):
         payment_pref = self.request.query_params.get('payment_preference')
         if payment_pref:
             qs = qs.filter(payment_preference__iexact=payment_pref)
-        # .filter(
-        #     # only slots fully in the past
-        #     Q(slots__date__lt=today) |
-        #     Q(slots__date=today, slots__end_time__lt=now.time())
-        # )
+        qs = qs.annotate(
+            has_history_slot=_matching_shift_slot_exists(
+                now=now,
+                today=today,
+                assigned_user_id=user.id,
+                state='history',
+            )
+        ).filter(has_history_slot=True)
 
         return qs.distinct()
 

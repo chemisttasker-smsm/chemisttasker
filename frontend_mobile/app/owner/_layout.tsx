@@ -297,7 +297,7 @@ export default function OwnerLayout() {
               (user as any)?.profilePhoto ||
               null;
             return (
-              <>
+              <View style={styles.headerRight}>
                 {showBack ? (
                   <IconButton
                     icon="arrow-left"
@@ -332,7 +332,7 @@ export default function OwnerLayout() {
                     />
                   )}
                 </TouchableOpacity>
-              </>
+              </View>
             );
           },
         })}
@@ -469,6 +469,10 @@ export default function OwnerLayout() {
 }
 
 const styles = StyleSheet.create({
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sidebar: {
     backgroundColor: '#FFFFFF',
     margin: 16,

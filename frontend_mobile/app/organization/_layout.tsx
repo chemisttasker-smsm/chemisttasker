@@ -298,7 +298,7 @@ export default function OrganizationLayout() {
             const canGoBack = typeof router.canGoBack === 'function' ? router.canGoBack() : false;
             const showBack = !isDashboard;
             return (
-              <>
+              <View style={styles.headerRight}>
                 {showBack ? (
                   <IconButton
                     icon="arrow-left"
@@ -331,7 +331,7 @@ export default function OrganizationLayout() {
                     />
                   )}
                 </TouchableOpacity>
-              </>
+              </View>
             );
           },
         })}
@@ -435,6 +435,10 @@ export default function OrganizationLayout() {
 }
 
 const styles = StyleSheet.create({
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sidebar: {
     backgroundColor: '#FFFFFF',
     margin: 16,

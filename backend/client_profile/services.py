@@ -216,6 +216,46 @@ def _get_award_rate_for_segment(role_needed, day_type, time_bucket):
     }
 
 
+def _get_pharmacist_rate_for_segment(shift, day_type, time_bucket, rate_preference):
+    rate_type = getattr(shift, 'rate_type', None) or 'FLEXIBLE'
+
+    if rate_type == 'FIXED':
+        fixed_rate = getattr(shift, 'fixed_rate', None)
+        if fixed_rate is None:
+            raise KeyError('Shift fixed rate not configured')
+        return Decimal(str(fixed_rate)), {
+            'source': 'Shift',
+            'rate_type': 'FIXED',
+            'day_type': day_type,
+            'time_bucket': time_bucket,
+        }
+
+    if rate_type == 'PHARMACIST_PROVIDED':
+        rate_key = _resolve_pharmacist_rate_key(day_type, time_bucket, rate_preference)
+        rate_value = rate_preference.get(rate_key)
+        if rate_value in (None, ''):
+            raise KeyError(f'Pharmacist rate preference not configured for {rate_key}')
+        return Decimal(str(rate_value)), {
+            'source': 'Pharmacist',
+            'rate_type': 'PHARMACIST_PROVIDED',
+            'rate_key': rate_key,
+            'day_type': day_type,
+            'time_bucket': time_bucket,
+        }
+
+    rate_key = _resolve_pharmacist_rate_key(day_type, time_bucket, rate_preference)
+    rate_value = _get_pharmacy_rate_for_key(shift.pharmacy, rate_key)
+    if rate_value is None:
+        raise KeyError(f'Pharmacy rate not configured for {rate_key}')
+    return Decimal(str(rate_value)), {
+        'source': 'Pharmacy',
+        'rate_type': rate_type,
+        'rate_key': rate_key,
+        'day_type': day_type,
+        'time_bucket': time_bucket,
+    }
+
+
 def _format_segment_description(segment):
     bucket_labels = {
         'early_morning': 'early morning',
@@ -266,17 +306,12 @@ def _price_shift_segments(slot_date, start_time, end_time, shift, rate_preferenc
         day_type = get_day_type(day_window['date'], getattr(shift.pharmacy, 'state', '') or '')
         for segment in _split_day_window_into_segments(day_window):
             if shift.role_needed == 'PHARMACIST':
-                rate_key = _resolve_pharmacist_rate_key(day_type, segment['time_bucket'], rate_preference)
-                rate_value = _get_pharmacy_rate_for_key(shift.pharmacy, rate_key)
-                if rate_value is None:
-                    raise KeyError(f'Pharmacy rate not configured for {rate_key}')
-                segment_rate = Decimal(str(rate_value))
-                meta = {
-                    'source': 'Pharmacy',
-                    'rate_key': rate_key,
-                    'day_type': day_type,
-                    'time_bucket': segment['time_bucket'],
-                }
+                segment_rate, meta = _get_pharmacist_rate_for_segment(
+                    shift,
+                    day_type,
+                    segment['time_bucket'],
+                    rate_preference,
+                )
             else:
                 segment_rate, award_meta = _get_award_rate_for_segment(
                     shift.role_needed,
@@ -419,6 +454,21 @@ def generate_preview_invoice_lines(shift, user):
         hours = Decimal(str(entry['hours']))   # <--- ensure Decimal
         rate = assn.unit_rate or Decimal('0.00')
         reason = assn.rate_reason or {}
+
+        should_refresh_rate = rate <= 0 or bool(reason.get('error'))
+        if should_refresh_rate:
+            refreshed_rate, refreshed_reason = get_locked_rate_for_slot(
+                slot=slot,
+                shift=shift,
+                user=user,
+                override_date=slot_date,
+            )
+            rate = refreshed_rate or Decimal('0.00')
+            reason = refreshed_reason or {}
+            if rate > 0 or reason != (assn.rate_reason or {}):
+                assn.unit_rate = rate
+                assn.rate_reason = reason
+                assn.save(update_fields=['unit_rate', 'rate_reason'])
 
         total = (hours * rate).quantize(Decimal('0.01'))
 
